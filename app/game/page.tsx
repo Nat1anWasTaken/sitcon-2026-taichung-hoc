@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Rabbit, Sparkles, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { sectionOne } from "@/lib/game/config";
 import { GameCue, SectionProgress } from "@/lib/game-types";
@@ -38,7 +44,9 @@ export default function GamePage() {
       const { session: me } = await meRes.json();
       setSession(me);
 
-      const progRes = await fetch("/api/game/progress/section-1", { credentials: "include" });
+      const progRes = await fetch("/api/game/progress/section-1", {
+        credentials: "include",
+      });
       const progData = await progRes.json();
       setProgress(progData.progress);
       setTypedPrompt(progData.progress?.lastPrompt ?? "");
@@ -60,7 +68,7 @@ export default function GamePage() {
         const cuesData = await cuesRes.json();
         setCues(cuesData.cues);
       }
-    }, 8000);
+    }, 2000);
     return () => clearInterval(id);
   }, []);
 
@@ -71,12 +79,32 @@ export default function GamePage() {
 
   const levelConfig = useMemo(() => {
     if (!progress || !phaseConfig) return null;
-    return phaseConfig.levels[progress.currentLevel - 1];
-  }, [progress, phaseConfig]);
+    const baseLevel = phaseConfig.levels[progress.currentLevel - 1];
+    if (!baseLevel) return null;
 
-  const startPhase3Active = cues.some((c) => c.id === "start-phase-3" && c.active);
+    const bonusBlocksActive = cues.some(
+      (c) => c.id === "unlock-bonus-blocks" && c.active,
+    );
+    if (
+      phaseConfig.mode === "blocks" &&
+      bonusBlocksActive &&
+      baseLevel.blocks
+    ) {
+      return {
+        ...baseLevel,
+        blocks: [...baseLevel.blocks, ...(baseLevel.bonusBlocks ?? [])],
+      };
+    }
+
+    return baseLevel;
+  }, [cues, phaseConfig, progress]);
+
+  const startPhase3Active = cues.some(
+    (c) => c.id === "start-phase-3" && c.active,
+  );
   const phase3Locked =
-    (progress?.phase1Complete === false || progress?.phase2Complete === false) ||
+    progress?.phase1Complete === false ||
+    progress?.phase2Complete === false ||
     !startPhase3Active;
 
   useEffect(() => {
@@ -121,7 +149,8 @@ export default function GamePage() {
         setTypedPrompt(prompt);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
       setFeedback(message);
       setMatch(null);
     } finally {
@@ -163,12 +192,11 @@ export default function GamePage() {
             <div>
               <CardTitle>{levelConfig.target}</CardTitle>
               <CardDescription>
-                {phaseConfig.description ?? "Build a prompt to match the target image."}
+                {phaseConfig.description ??
+                  "Build a prompt to match the target image."}
               </CardDescription>
             </div>
-            <BadgeChip>
-              Phase {progress.currentPhase} of 3
-            </BadgeChip>
+            <BadgeChip>Phase {progress.currentPhase} of 3</BadgeChip>
           </CardHeader>
           <CardContent className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
@@ -186,7 +214,12 @@ export default function GamePage() {
                 />
               )}
               <div className="flex items-center gap-3">
-                <Button onClick={handleGenerate} disabled={loading || (progress.currentPhase === 3 && phase3Locked)}>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={
+                    loading || (progress.currentPhase === 3 && phase3Locked)
+                  }
+                >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -213,7 +246,9 @@ export default function GamePage() {
               {feedback && (
                 <div
                   className={`rounded-md border-4 px-3 py-2 text-sm font-semibold shadow-shadow ${
-                    match ? "border-green-600 text-green-700" : "border-foreground"
+                    match
+                      ? "border-green-600 text-green-700"
+                      : "border-foreground"
                   }`}
                 >
                   {feedback}
@@ -222,11 +257,17 @@ export default function GamePage() {
             </div>
 
             <div className="space-y-3">
-              <Label className="text-sm uppercase text-foreground/60">Latest image</Label>
+              <Label className="text-sm uppercase text-foreground/60">
+                Latest image
+              </Label>
               <div className="aspect-square w-full overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={imageUrl} alt="Generated preview" className="h-full w-full object-cover" />
+                  <img
+                    src={imageUrl}
+                    alt="Generated preview"
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full items-center justify-center text-sm font-semibold text-foreground/60">
                     Generate to see your art here
@@ -263,7 +304,10 @@ function BlockBuilder({
     onSelect([...selected, block]);
   };
 
-  const onDragStart = (e: React.DragEvent<HTMLButtonElement>, block: string) => {
+  const onDragStart = (
+    e: React.DragEvent<HTMLButtonElement>,
+    block: string,
+  ) => {
     e.dataTransfer.setData("text/plain", block);
   };
 
@@ -281,7 +325,9 @@ function BlockBuilder({
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm uppercase text-foreground/70">Prompt blocks</Label>
+      <Label className="text-sm uppercase text-foreground/70">
+        Prompt blocks
+      </Label>
       <div className="flex flex-wrap gap-2">
         {blocks.map((block) => (
           <button
@@ -333,7 +379,9 @@ function TextPromptInput({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-sm uppercase text-foreground/70">Type your prompt</Label>
+      <Label className="text-sm uppercase text-foreground/70">
+        Type your prompt
+      </Label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -2,6 +2,7 @@ export type LevelConfig = {
   id: string;
   target: string;
   blocks?: string[];
+  bonusBlocks?: string[];
   hint?: string;
 };
 
@@ -46,6 +47,7 @@ export const sectionOne: SectionConfig = {
             "cartoon",
             "style",
           ],
+          bonusBlocks: ["detailed", "soft lighting", "pastel", "studio photo"],
         },
         {
           id: "p1-level-2",
@@ -61,6 +63,7 @@ export const sectionOne: SectionConfig = {
             "cartoon",
             "style",
           ],
+          bonusBlocks: ["cute eyes", "close-up", "vibrant colors", "sharp focus"],
         },
         {
           id: "p1-level-3",
@@ -77,6 +80,7 @@ export const sectionOne: SectionConfig = {
             "sunny",
             "day",
           ],
+          bonusBlocks: ["wide angle", "dramatic lighting", "lush greenery", "high detail"],
         },
       ],
     },
