@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  getDoc,
-  getDocs,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
 import { childBySeatQuery, childDoc, childrenCollection } from "./collections";
 import { ChildAccount } from "./types";
@@ -64,6 +58,27 @@ export async function createChildAccount({
 export async function updateChildName(childId: string, name: string) {
   await updateDoc(childDoc(childId), {
     name,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function resetChildPassword(childId: string, password: string) {
+  const salt = generateSalt();
+  const passwordHash = await hashPassword(password, salt);
+
+  await updateDoc(childDoc(childId), {
+    passwordSalt: salt,
+    passwordHash,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function setChildStatus(
+  childId: string,
+  status: Exclude<ChildAccount["status"], undefined>,
+) {
+  await updateDoc(childDoc(childId), {
+    status,
     updatedAt: serverTimestamp(),
   });
 }
