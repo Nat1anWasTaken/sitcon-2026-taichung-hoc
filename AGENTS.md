@@ -10,6 +10,12 @@
 - **Use pnpm.** All shadcn installs and dependency additions should use `pnpm` to stay consistent with the repo.
 - **Firebase security rules are mandatory.** When adding or changing any Realtime Database or Firestore usage, update and review the corresponding security rules before shipping (lock down by default; only open paths that are explicitly needed).
 
+## Neobrutalism shadcn registry notes (CLI quirks)
+
+- The `shadcn add` command does **not** support a `--registry` flag. Pass the registry URL directly as the component argument, e.g. `pnpm dlx shadcn@latest add https://v3.neobrutalism.dev/r/button.json`.
+- The neobrutalism registry endpoint that worked: `https://v3.neobrutalism.dev/r/<component>.json` (e.g. `button.json`). The previously documented `--registry https://raw.githubusercontent.com/ekmas/neobrutalism-components/main/registry.json` pattern fails with “unknown option '--registry'`.
+- Prefer existing components in `components/ui`; add new ones via the URL form above to stay on the neobrutalism set.
+
 ## Firebase setup (Auth + Firestore only)
 
 - Realtime Database is not used; only Firestore and Firebase Auth are initialized in `lib/firebase.ts`.
