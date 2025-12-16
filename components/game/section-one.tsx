@@ -1,8 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Rabbit, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Rabbit, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  DndContext,
+  DragEndEvent,
+  useDraggable,
+  useDroppable,
+  DragOverlay,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -314,21 +329,59 @@ function BlockBuilder({
   selected: string[];
   onSelect: (blocks: string[]) => void;
 }) {
-  const handleDrop = (block: string) => {
-    onSelect([...selected, block]);
-  };
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const onDragStart = (
-    e: React.DragEvent<HTMLButtonElement>,
-    block: string,
-  ) => {
-    e.dataTransfer.setData("text/plain", block);
-  };
+  // Create unique IDs for selected blocks
+  const selectedWithIds = useMemo(
+    () => selected.map((block, idx) => ({ id: `selected-${idx}`, block })),
+    [selected],
+  );
 
-  const handlePromptDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const text = e.dataTransfer.getData("text/plain");
-    if (text) onSelect([...selected, text]);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    // Check if dropping on removal zone
+    if (over.id === "removal-zone") {
+      // Only remove if dragging from selected blocks
+      if (active.id.toString().startsWith("selected-")) {
+        const index = selectedWithIds.findIndex(
+          (item) => item.id === active.id,
+        );
+        if (index !== -1) {
+          removeAt(index);
+        }
+      }
+      return;
+    }
+
+    // Check if dragging from source blocks to prompt bar
+    if (active.id.toString().startsWith("source-")) {
+      const block = active.id.toString().replace("source-", "");
+      // Add to selected if dropping on the prompt bar area
+      if (over.id === "prompt-bar") {
+        onSelect([...selected, block]);
+      }
+      return;
+    }
+
+    // Handle reordering within selected blocks
+    if (
+      active.id.toString().startsWith("selected-") &&
+      over.id.toString().startsWith("selected-")
+    ) {
+      const oldIndex = selectedWithIds.findIndex(
+        (item) => item.id === active.id,
+      );
+      const newIndex = selectedWithIds.findIndex((item) => item.id === over.id);
+
+      if (oldIndex !== newIndex) {
+        const reordered = arrayMove(selected, oldIndex, newIndex);
+        onSelect(reordered);
+      }
+    }
   };
 
   const removeAt = (idx: number) => {
@@ -338,45 +391,164 @@ function BlockBuilder({
   };
 
   return (
-    <div className="space-y-3">
-      <Label className="text-sm uppercase text-foreground/70">
-        Prompt blocks
-      </Label>
-      <div className="flex flex-wrap gap-2">
-        {blocks.map((block) => (
-          <button
-            key={block}
-            draggable
-            onDragStart={(e) => onDragStart(e, block)}
-            onClick={() => handleDrop(block)}
-            className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow transition hover:-translate-y-0.5"
-          >
-            {block}
-          </button>
-        ))}
-      </div>
-      <div
-        className="min-h-[96px] rounded-md border-4 border-dashed border-foreground bg-secondary-background p-3 shadow-shadow"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handlePromptDrop}
-      >
-        <p className="text-xs uppercase text-foreground/60">Prompt bar</p>
-        {selected.length === 0 && (
-          <p className="mt-2 text-sm font-semibold text-foreground/70">
-            Drag blocks here, or click them to add.
-          </p>
-        )}
-        <div className="mt-2 flex flex-wrap gap-2">
-          {selected.map((block, idx) => (
-            <button
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={(event) => setActiveId(event.active.id.toString())}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-3">
+        <Label className="text-sm uppercase text-foreground/70">
+          Prompt blocks
+        </Label>
+        <div className="flex flex-wrap gap-2">
+          {blocks.map((block, idx) => (
+            <DraggableBlock
               key={`${block}-${idx}`}
-              onClick={() => removeAt(idx)}
-              className="rounded-md border-4 border-foreground bg-main px-2 py-1 text-xs font-semibold shadow-shadow"
-            >
-              {block}
-            </button>
+              id={`source-${block}`}
+              block={block}
+              onClick={() => onSelect([...selected, block])}
+            />
           ))}
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PromptBar
+            selectedWithIds={selectedWithIds}
+            onRemove={removeAt}
+            isEmpty={selected.length === 0}
+          />
+          <RemovalZone />
+        </div>
+      </div>
+    </DndContext>
+  );
+}
+
+function DraggableBlock({
+  id,
+  block,
+  onClick,
+}: {
+  id: string;
+  block: string;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({ id });
+
+  const style = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <button
+      ref={setNodeRef}
+      style={style}
+      onClick={onClick}
+      {...listeners}
+      {...attributes}
+      className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow transition hover:-translate-y-0.5 touch-none"
+    >
+      {block}
+    </button>
+  );
+}
+
+function PromptBar({
+  selectedWithIds,
+  onRemove,
+  isEmpty,
+}: {
+  selectedWithIds: { id: string; block: string }[];
+  onRemove: (idx: number) => void;
+  isEmpty: boolean;
+}) {
+  const { setNodeRef } = useDroppable({ id: "prompt-bar" });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="min-h-[96px] rounded-md border-4 border-dashed border-foreground bg-secondary-background p-3 shadow-shadow"
+    >
+      <p className="text-xs uppercase text-foreground/60">Prompt bar</p>
+      {isEmpty && (
+        <p className="mt-2 text-sm font-semibold text-foreground/70">
+          Drag blocks here, or click them to add.
+        </p>
+      )}
+      <SortableContext
+        items={selectedWithIds.map((item) => item.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="mt-2 flex flex-wrap gap-2">
+          {selectedWithIds.map((item, idx) => (
+            <SortableBlock
+              key={item.id}
+              id={item.id}
+              block={item.block}
+              onRemove={() => onRemove(idx)}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </div>
+  );
+}
+
+function SortableBlock({
+  id,
+  block,
+  onRemove,
+}: {
+  id: string;
+  block: string;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <button
+      ref={setNodeRef}
+      style={style}
+      onClick={onRemove}
+      {...listeners}
+      {...attributes}
+      className="rounded-md border-4 border-foreground bg-main px-2 py-1 text-xs font-semibold shadow-shadow transition hover:-translate-y-0.5 touch-none cursor-move"
+    >
+      {block}
+    </button>
+  );
+}
+
+function RemovalZone() {
+  const { setNodeRef, isOver } = useDroppable({ id: "removal-zone" });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex min-h-[96px] items-center justify-center rounded-md border-4 border-dashed px-4 py-3 shadow-shadow transition-colors ${
+        isOver
+          ? "border-red-600 bg-red-100"
+          : "border-foreground/40 bg-secondary-background"
+      }`}
+    >
+      <div className="flex flex-col items-center gap-2">
+        <Trash2
+          className={`h-6 w-6 ${isOver ? "text-red-600" : "text-foreground/60"}`}
+        />
+        <p
+          className={`text-xs font-semibold uppercase ${isOver ? "text-red-600" : "text-foreground/60"}`}
+        >
+          {isOver ? "Drop to remove" : "Drag here to remove"}
+        </p>
       </div>
     </div>
   );

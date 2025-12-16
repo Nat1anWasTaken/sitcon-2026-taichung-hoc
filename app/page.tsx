@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from "react";
-import { Loader2, Rabbit, Sparkles, Swords } from "lucide-react";
+import { Loader2, Rabbit } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -42,88 +42,55 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-3 space-y-4">
-          <div className="inline-flex items-center gap-3 rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
-            <Sparkles className="h-5 w-5" />
-            Welcome to the Garden Game
-          </div>
-          <h1 className="text-4xl font-bold leading-tight">
-            Enter your secret password to start playing
-          </h1>
-          <p className="max-w-2xl text-lg text-foreground/80">
-            Use the child ID on your badge and your password. You&apos;ll unlock three phases:
-            drag-and-drop prompts, typed prompts, and the final quest.
-          </p>
-          <div className="flex flex-wrap gap-3 text-sm font-semibold">
-            <BadgePill>Phase 1: Prompt blocks</BadgePill>
-            <BadgePill>Phase 2: Type it out</BadgePill>
-            <BadgePill>Phase 3: Admin cue</BadgePill>
-          </div>
-          <Button variant="secondary" className="gap-2" onClick={() => router.push("/admin")}>
-            <Swords className="h-4 w-4" />
-            Admin sign-in
-          </Button>
-        </div>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Rabbit className="h-5 w-5" />
-              Child login
-            </CardTitle>
-            <CardDescription>Seat badge ID + password to enter the game.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="childId">Child ID</Label>
-                <Input
-                  id="childId"
-                  required
-                  value={childId}
-                  onChange={(e) => setChildId(e.target.value)}
-                  placeholder="ABC123"
-                />
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Rabbit className="h-5 w-5" />
+            Child login
+          </CardTitle>
+          <CardDescription>Seat badge ID + password to enter the game.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="childId">Child ID</Label>
+              <Input
+                id="childId"
+                required
+                value={childId}
+                onChange={(e) => setChildId(e.target.value)}
+                placeholder="ABC123"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••"
+              />
+            </div>
+            {error && (
+              <div className="rounded-md border-4 border-destructive bg-secondary-background px-3 py-2 text-sm font-semibold text-destructive shadow-shadow">
+                {error}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••"
-                />
-              </div>
-              {error && (
-                <div className="rounded-md border-4 border-destructive bg-secondary-background px-3 py-2 text-sm font-semibold text-destructive shadow-shadow">
-                  {error}
-                </div>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Checking…
+                </>
+              ) : (
+                "Start playing"
               )}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Checking…
-                  </>
-                ) : (
-                  "Start playing"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
-  );
-}
-
-function BadgePill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border-4 border-foreground bg-secondary-background px-3 py-1 text-xs shadow-shadow">
-      {children}
-    </span>
   );
 }
