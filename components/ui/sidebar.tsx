@@ -540,11 +540,9 @@ function SidebarMenuButton({
 function SidebarMenuAction({
   className,
   asChild = false,
-  showOnHover = false,
   ...props
 }: React.ComponentProps<"button"> & {
   asChild?: boolean
-  showOnHover?: boolean
 }) {
   const Comp = asChild ? Slot : "button"
 
@@ -596,10 +594,8 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+  // Fixed width for predictable renders.
+  const width = "70%";
 
   return (
     <div

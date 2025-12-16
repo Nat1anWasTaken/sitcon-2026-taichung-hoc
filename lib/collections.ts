@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 
 import { firestoreDb } from "./firebase";
+import { GameCue, SectionProgress } from "./game-types";
 import { AdminProfile, ChildAccount } from "./types";
 
 const adminConverter: FirestoreDataConverter<AdminProfile> = {
@@ -19,6 +20,16 @@ const adminConverter: FirestoreDataConverter<AdminProfile> = {
 const childConverter: FirestoreDataConverter<ChildAccount> = {
   toFirestore: (data) => data,
   fromFirestore: (snap) => snap.data() as ChildAccount,
+};
+
+const progressConverter: FirestoreDataConverter<SectionProgress> = {
+  toFirestore: (data) => data,
+  fromFirestore: (snap) => snap.data() as SectionProgress,
+};
+
+const cueConverter: FirestoreDataConverter<GameCue> = {
+  toFirestore: (data) => data,
+  fromFirestore: (snap) => ({ id: snap.id, ...(snap.data() as GameCue) }),
 };
 
 export const adminCollection = collection(
@@ -39,3 +50,19 @@ export const childDoc = (childId: string) =>
 
 export const childBySeatQuery = (seatNumber: number) =>
   query(childrenCollection, where("seatNumber", "==", seatNumber));
+
+export const sectionProgressCollection = (childId: string) =>
+  collection(firestoreDb, "childProgress", childId, "sections").withConverter(
+    progressConverter,
+  ) as CollectionReference<SectionProgress>;
+
+export const sectionProgressDoc = (childId: string, sectionId: string) =>
+  doc(sectionProgressCollection(childId), sectionId) as DocumentReference<SectionProgress>;
+
+export const gameCuesCollection = collection(
+  firestoreDb,
+  "gameCues",
+).withConverter(cueConverter) as CollectionReference<GameCue>;
+
+export const gameCueDoc = (cueId: string) =>
+  doc(gameCuesCollection, cueId) as DocumentReference<GameCue>;

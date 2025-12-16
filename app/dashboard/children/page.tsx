@@ -83,8 +83,9 @@ export default function ChildrenPage() {
         setMessage("Child account created");
         setFormState({ childId: "", seatNumber: "", password: "", name: "" });
         setCreateOpen(false);
-      } catch (err: any) {
-        setMessage(err.message ?? "Failed to create child");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to create child";
+        setMessage(message);
       }
     });
   };

@@ -1,17 +1,18 @@
 'use client';
 
 import { FormEvent, useState } from "react";
-import { Loader2, Rabbit, Sparkles, Swords } from "lucide-react";
+import { Loader2, ShieldCheck, UserCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { signInAdmin } from "@/lib/auth";
 
-export default function Home() {
+export default function AdminPage() {
   const router = useRouter();
-  const [childId, setChildId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,19 +22,10 @@ export default function Home() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/child/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ childId: childId.trim(), password }),
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Login failed");
-      }
-      router.replace("/game");
+      await signInAdmin(email, password);
+      router.replace("/dashboard");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Login failed";
+      const message = err instanceof Error ? err.message : "Sign-in failed";
       setError(message);
     } finally {
       setLoading(false);
@@ -45,45 +37,37 @@ export default function Home() {
       <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3 space-y-4">
           <div className="inline-flex items-center gap-3 rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
-            <Sparkles className="h-5 w-5" />
-            Welcome to the Garden Game
+            <ShieldCheck className="h-5 w-5" />
+            Taichung HOC · Admin portal
           </div>
           <h1 className="text-4xl font-bold leading-tight">
-            Enter your secret password to start playing
+            Sign in to manage children and sessions
           </h1>
           <p className="max-w-2xl text-lg text-foreground/80">
-            Use the child ID on your badge and your password. You&apos;ll unlock three phases:
-            drag-and-drop prompts, typed prompts, and the final quest.
+            Admin accounts are provisioned in Firebase Auth (email / password). Use your
+            credentials to enter the dashboard. Children never sign in here.
           </p>
-          <div className="flex flex-wrap gap-3 text-sm font-semibold">
-            <BadgePill>Phase 1: Prompt blocks</BadgePill>
-            <BadgePill>Phase 2: Type it out</BadgePill>
-            <BadgePill>Phase 3: Admin cue</BadgePill>
-          </div>
-          <Button variant="secondary" className="gap-2" onClick={() => router.push("/admin")}>
-            <Swords className="h-4 w-4" />
-            Admin sign-in
-          </Button>
         </div>
 
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Rabbit className="h-5 w-5" />
-              Child login
+              <UserCircle2 className="h-5 w-5" />
+              Admin sign-in
             </CardTitle>
-            <CardDescription>Seat badge ID + password to enter the game.</CardDescription>
+            <CardDescription>Use the email/password from Firebase console.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="childId">Child ID</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="childId"
+                  id="email"
+                  type="email"
                   required
-                  value={childId}
-                  onChange={(e) => setChildId(e.target.value)}
-                  placeholder="ABC123"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -92,9 +76,9 @@ export default function Home() {
                   id="password"
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••"
                 />
               </div>
               {error && (
@@ -106,10 +90,10 @@ export default function Home() {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Checking…
+                    Signing in…
                   </>
                 ) : (
-                  "Start playing"
+                  "Sign in"
                 )}
               </Button>
             </form>
@@ -117,13 +101,5 @@ export default function Home() {
         </Card>
       </div>
     </div>
-  );
-}
-
-function BadgePill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border-4 border-foreground bg-secondary-background px-3 py-1 text-xs shadow-shadow">
-      {children}
-    </span>
   );
 }

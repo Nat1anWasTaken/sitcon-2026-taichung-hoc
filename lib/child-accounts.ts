@@ -2,27 +2,9 @@
 
 import { getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
-import { childBySeatQuery, childDoc, childrenCollection } from "./collections";
+import { childBySeatQuery, childDoc } from "./collections";
+import { hashPassword, generateSalt } from "./passwords";
 import { ChildAccount } from "./types";
-
-const encoder = new TextEncoder();
-
-function toHex(bytes: ArrayBuffer) {
-  return Array.from(new Uint8Array(bytes))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export function generateSalt() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return toHex(bytes.buffer);
-}
-
-export async function hashPassword(password: string, salt: string) {
-  const data = encoder.encode(`${salt}:${password}`);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return toHex(hashBuffer);
-}
 
 type CreateChildInput = {
   childId: string;
@@ -46,8 +28,8 @@ export async function createChildAccount({
     passwordSalt: salt,
     passwordHash,
     name: name ?? null,
-    createdAt: serverTimestamp() as any,
-    updatedAt: serverTimestamp() as any,
+    createdAt: serverTimestamp() as unknown as ChildAccount["createdAt"],
+    updatedAt: serverTimestamp() as unknown as ChildAccount["updatedAt"],
     status: "active",
   };
 

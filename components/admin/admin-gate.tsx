@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { User } from "firebase/auth";
 
@@ -13,7 +13,6 @@ type Props = {
 
 export function AdminGate({ children }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [checked, setChecked] = useState(false);
 
