@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 type FirebaseConfig = {
@@ -7,7 +7,6 @@ type FirebaseConfig = {
   authDomain: string;
   projectId: string;
   appId: string;
-  databaseURL: string;
   storageBucket?: string;
   messagingSenderId?: string;
 };
@@ -17,7 +16,6 @@ const requiredEnv = {
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 const optionalEnv = {
@@ -50,9 +48,8 @@ function assertConfig(env: typeof requiredEnv): FirebaseConfig {
 const firebaseConfig = assertConfig(requiredEnv);
 
 // Ensure we only initialize once across hot reloads and server/client boundaries.
-const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-export const realtimeDb = getDatabase(app);
+export const auth = getAuth(app);
 export const firestoreDb = getFirestore(app);
 export { app };
