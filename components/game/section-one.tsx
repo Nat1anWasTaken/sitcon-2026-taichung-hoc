@@ -410,14 +410,12 @@ function BlockBuilder({
             />
           ))}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <PromptBar
-            selectedWithIds={selectedWithIds}
-            onRemove={removeAt}
-            isEmpty={selected.length === 0}
-          />
-          <RemovalZone />
-        </div>
+        <PromptBar
+          selectedWithIds={selectedWithIds}
+          onRemove={removeAt}
+          isEmpty={selected.length === 0}
+        />
+        <RemovalZone />
       </div>
     </DndContext>
   );
