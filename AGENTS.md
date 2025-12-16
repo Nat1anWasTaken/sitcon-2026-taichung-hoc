@@ -9,3 +9,17 @@
 - **Documentation first.** When unsure about variants or available components, check the docs at https://www.neobrutalism.dev/docs and copy the shadcn CLI command shown there.
 - **Use pnpm.** All shadcn installs and dependency additions should use `pnpm` to stay consistent with the repo.
 - **Firebase security rules are mandatory.** When adding or changing any Realtime Database or Firestore usage, update and review the corresponding security rules before shipping (lock down by default; only open paths that are explicitly needed).
+
+## Firebase setup (Auth + Firestore only)
+
+- Realtime Database is not used; only Firestore and Firebase Auth are initialized in `lib/firebase.ts`.
+- Admins authenticate via Firebase Auth email/password. Admin-specific helpers live in `lib/auth.ts`.
+- Kids do **not** use Firebase Auth. Their login records are Firestore documents under `children/{childId}` managed by admins.
+- Types and typed references:
+  - `lib/types.ts` defines `AdminProfile` and `ChildAccount`.
+  - `lib/collections.ts` exports `adminCollection`, `childrenCollection`, `adminDoc`, `childDoc`, and `childBySeatQuery`.
+- Child account helpers (hashing, creation, verification) are in `lib/child-accounts.ts`. Passwords are salted SHA-256 hashes; salts generated client-side with Web Crypto.
+- Firestore rules (`firestore.rules`):
+  - Access is admin-only. Admin status is granted by presence of `admins/{uid}`.
+  - `children/{childId}` is readable/writable only by admins; first admin must be seeded manually (Auth user + `admins/{uid}` doc).
+- When adding data features, keep children behind an admin-mediated API/server action; never open Firestore rules to unauthenticated users.
