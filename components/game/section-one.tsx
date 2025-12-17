@@ -198,11 +198,11 @@ export function SectionOneGame() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-h-screen flex-col bg-background">
+      <div className="grid flex-1 grid-rows-[auto,1fr] gap-6 px-4 py-6 sm:px-6 lg:px-10">
+        <header className="flex flex-col gap-3 rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 shadow-shadow sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 font-semibold shadow-shadow">
+            <div className="rounded-md border-4 border-foreground bg-background px-3 py-2 font-semibold shadow-shadow">
               <Rabbit className="mr-2 inline h-4 w-4" />
               Seat {session.seatNumber} · {session.childId}
             </div>
@@ -216,7 +216,7 @@ export function SectionOneGame() {
           </div>
         </header>
 
-        <Card>
+        <Card className="h-full">
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>{levelConfig.target}</CardTitle>
@@ -227,8 +227,8 @@ export function SectionOneGame() {
             </div>
             <BadgeChip>Phase {progress.currentPhase} of 3</BadgeChip>
           </CardHeader>
-          <CardContent className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-4">
+          <CardContent className="grid h-full gap-6 lg:grid-cols-[1.15fr_1fr] xl:grid-cols-[1.25fr_1fr]">
+            <div className="flex flex-col gap-4">
               {phaseConfig.mode === "blocks" ? (
                 <BlockBuilder
                   blocks={shuffledBlocks}
@@ -242,7 +242,7 @@ export function SectionOneGame() {
                   disabled={progress.currentPhase === 3 && phase3Locked}
                 />
               )}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Button
                   onClick={handleGenerate}
                   disabled={
@@ -285,11 +285,11 @@ export function SectionOneGame() {
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               <Label className="text-sm uppercase text-foreground/60">
                 Latest image
               </Label>
-              <div className="aspect-square w-full overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
+              <div className="flex flex-1 min-h-[320px] overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -298,7 +298,7 @@ export function SectionOneGame() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm font-semibold text-foreground/60">
+                  <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-foreground/60">
                     Generate to see your art here
                   </div>
                 )}
