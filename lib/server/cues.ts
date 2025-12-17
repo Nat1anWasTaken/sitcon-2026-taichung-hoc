@@ -13,21 +13,25 @@ const CUES_COLLECTION = "gameCues";
 export async function listActiveCues(): Promise<GameCue[]> {
     const db = assertAdminDb();
     const snap = await db.collection(CUES_COLLECTION).where("active", "==", true).get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as GameCue) }));
+    return snap.docs.map((d) => {
+        const { id: _ignored, ...rest } = d.data() as GameCue;
+        return { ...rest, id: d.id };
+    });
 }
 
 export async function setCueState(cueId: string, data: Partial<GameCue>) {
     const db = assertAdminDb();
+    const { id: _ignored, ...safeData } = data;
     await db
         .collection(CUES_COLLECTION)
         .doc(cueId)
         .set(
             {
-                id: cueId,
                 active: false,
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
-                ...data,
+                ...safeData,
+                id: cueId,
             },
             { merge: true }
         );
@@ -36,5 +40,7 @@ export async function setCueState(cueId: string, data: Partial<GameCue>) {
 export async function getCue(cueId: string): Promise<GameCue | null> {
     const db = assertAdminDb();
     const snap = await db.collection(CUES_COLLECTION).doc(cueId).get();
-    return snap.exists ? ({ id: snap.id, ...(snap.data() as GameCue) } as GameCue) : null;
+    if (!snap.exists) return null;
+    const { id: _ignored, ...rest } = snap.data() as GameCue;
+    return { ...rest, id: snap.id };
 }

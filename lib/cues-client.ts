@@ -9,15 +9,15 @@ export async function setCueActive(
     active: boolean,
     payload?: Record<string, unknown>
 ) {
+    const data = {
+        active,
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        ...(payload !== undefined ? { payload } : {}),
+    };
     await setDoc(
         gameCueDoc(cueId),
-        {
-            id: cueId,
-            active,
-            payload: payload ?? null,
-            updatedAt: serverTimestamp(),
-            createdAt: serverTimestamp(),
-        },
+        data,
         { merge: true }
     );
 }

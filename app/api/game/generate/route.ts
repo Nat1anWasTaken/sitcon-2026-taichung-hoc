@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { evaluateImageMatch, generateGameImage } from "@/lib/ai";
 import { getSectionConfig } from "@/lib/game/config";
+import { PhaseId } from "@/lib/game-types";
 import { getSectionProgress, saveSectionProgress } from "@/lib/server/progress";
 import { getCue } from "@/lib/server/cues";
 import { requireChildSession } from "@/lib/server/session";
@@ -9,7 +10,7 @@ import { requireChildSession } from "@/lib/server/session";
 export async function POST(req: NextRequest) {
     let session;
     try {
-        session = requireChildSession(req);
+        session = await requireChildSession(req);
     } catch {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -28,6 +29,8 @@ export async function POST(req: NextRequest) {
 
     const { image, dataUrl } = await generateGameImage(prompt);
     const evaluation = await evaluateImageMatch(image, target);
+
+    const asPhaseId = (value: number): PhaseId => Math.min(Math.max(value, 1), 3) as PhaseId;
 
     let nextPhase = progress.currentPhase;
     let nextLevel = progress.currentLevel;
@@ -53,14 +56,14 @@ export async function POST(req: NextRequest) {
                     const cue = await getCue(candidateConfig.lockedByCue);
                     const unlocked = !!cue?.active;
                     if (unlocked) {
-                        nextPhase = candidatePhase;
+                        nextPhase = asPhaseId(candidatePhase);
                         nextLevel = 1;
                     } else {
                         nextPhase = progress.currentPhase;
                         nextLevel = phaseLevels; // stay on last level until unlocked
                     }
                 } else {
-                    nextPhase = candidatePhase;
+                    nextPhase = asPhaseId(candidatePhase);
                     nextLevel = 1;
                 }
             }

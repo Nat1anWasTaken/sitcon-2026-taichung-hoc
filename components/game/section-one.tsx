@@ -3,7 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Rabbit, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { DndContext, DragEndEvent, useDraggable, useDroppable, closestCenter } from "@dnd-kit/core";
+import {
+    DndContext,
+    DragEndEvent,
+    DragStartEvent,
+    useDraggable,
+    useDroppable,
+    closestCenter,
+    DragOverlay,
+} from "@dnd-kit/core";
 import {
     SortableContext,
     useSortable,
@@ -305,53 +313,82 @@ function BlockBuilder({
     selected: string[];
     onSelect: (blocks: string[]) => void;
 }) {
+    // Stable unique IDs for each source block even when labels repeat
+    const sourceBlocks = useMemo(
+        () => blocks.map((block, idx) => ({ id: `source-${idx}`, block })),
+        [blocks]
+    );
+
     // Create unique IDs for selected blocks
     const selectedWithIds = useMemo(
         () => selected.map((block, idx) => ({ id: `selected-${idx}`, block })),
         [selected]
     );
 
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveDragId(event.active.id.toString());
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
+        setActiveDragId(null);
         if (!over) return;
 
-        // Check if dropping on removal zone
-        if (over.id === "removal-zone") {
-            // Only remove if dragging from selected blocks
-            if (active.id.toString().startsWith("selected-")) {
-                const index = selectedWithIds.findIndex((item) => item.id === active.id);
-                if (index !== -1) {
-                    removeAt(index);
-                }
-            }
+        const activeId = active.id.toString();
+        const overId = over.id.toString();
+        const activeBlockLabel = active.data?.current?.block as string | undefined;
+        const activeIsSource = activeId.startsWith("source-");
+        const activeIsSelected = activeId.startsWith("selected-");
+        const overIsRemoval = overId === "removal-zone";
+        const overIsPrompt = overId === "prompt-bar";
+        const overSortable = over.data?.current?.sortable;
+        const overIsSelected = overId.startsWith("selected-") || Boolean(overSortable);
+
+        // 1) Remove when dropped on the bin
+        if (overIsRemoval && activeIsSelected) {
+            const index = selectedWithIds.findIndex((item) => item.id === activeId);
+            if (index !== -1) removeAt(index);
             return;
         }
 
-        // Check if dragging from source blocks to prompt bar
-        if (active.id.toString().startsWith("source-")) {
-            const block = active.id.toString().replace("source-", "");
-            // Add to selected if dropping on the prompt bar area
-            if (over.id === "prompt-bar") {
-                onSelect([...selected, block]);
-            }
+        // 2) Add a source block anywhere on the prompt bar (empty space OR on a chip)
+        if (activeIsSource) {
+            if (!activeBlockLabel) return;
+            const insertAt =
+                overIsPrompt || !overIsSelected
+                    ? selected.length
+                    : overSortable?.index ?? selectedWithIds.findIndex((i) => i.id === overId);
+
+            const next = [...selected];
+            next.splice(insertAt, 0, activeBlockLabel);
+            onSelect(next);
             return;
         }
 
-        // Handle reordering within selected blocks
-        if (
-            active.id.toString().startsWith("selected-") &&
-            over.id.toString().startsWith("selected-")
-        ) {
-            const oldIndex = selectedWithIds.findIndex((item) => item.id === active.id);
-            const newIndex = selectedWithIds.findIndex((item) => item.id === over.id);
+        // 3) Reorder selected chips
+        if (activeIsSelected && overIsSelected) {
+            const oldIndex = selectedWithIds.findIndex((item) => item.id === activeId);
+            const newIndex =
+                overSortable?.index ?? selectedWithIds.findIndex((item) => item.id === overId);
 
-            if (oldIndex !== newIndex) {
-                const reordered = arrayMove(selected, oldIndex, newIndex);
-                onSelect(reordered);
+            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+                onSelect(arrayMove(selected, oldIndex, newIndex));
             }
         }
     };
+
+    const handleDragCancel = () => setActiveDragId(null);
+
+    const activeBlock = useMemo(() => {
+        if (!activeDragId) return null;
+        // Prefer the data set on the draggable/sortable (handles duplicate labels)
+        const dragData = activeDragId.startsWith("source-")
+            ? sourceBlocks.find((s) => s.id === activeDragId)?.block
+            : selectedWithIds.find((item) => item.id === activeDragId)?.block;
+        return dragData ?? null;
+    }, [activeDragId, selectedWithIds, sourceBlocks]);
 
     const removeAt = (idx: number) => {
         const copy = [...selected];
@@ -360,14 +397,19 @@ function BlockBuilder({
     };
 
     return (
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+        >
             <div className="space-y-3">
                 <Label className="text-sm uppercase text-foreground/70">Prompt blocks</Label>
                 <div className="flex flex-wrap gap-2">
-                    {blocks.map((block, idx) => (
+                    {sourceBlocks.map(({ id, block }) => (
                         <DraggableBlock
-                            key={`${block}-${idx}`}
-                            id={`source-${block}`}
+                            key={id}
+                            id={id}
                             block={block}
                             onClick={() => onSelect([...selected, block])}
                         />
@@ -380,6 +422,9 @@ function BlockBuilder({
                 />
                 <RemovalZone />
             </div>
+            <DragOverlay dropAnimation={null}>
+                {activeBlock ? <OverlayBlock label={activeBlock} /> : null}
+            </DragOverlay>
         </DndContext>
     );
 }
@@ -393,11 +438,16 @@ function DraggableBlock({
     block: string;
     onClick: () => void;
 }) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id,
+        data: { block },
+    });
 
     const style = {
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0 : 1, // hide original while overlay follows pointer
+        cursor: isDragging ? "grabbing" : "grab",
+        transition: isDragging ? "none" : "transform 150ms ease-out, box-shadow 150ms ease-out",
     };
 
     return (
@@ -407,7 +457,7 @@ function DraggableBlock({
             onClick={onClick}
             {...listeners}
             {...attributes}
-            className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow transition hover:-translate-y-0.5 touch-none"
+            className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow hover:-translate-y-0.5 hover:rotate-1 hover:shadow-lg touch-none"
         >
             {block}
         </button>
@@ -428,7 +478,7 @@ function PromptBar({
     return (
         <div
             ref={setNodeRef}
-            className="min-h-[96px] rounded-md border-4 border-dashed border-foreground bg-secondary-background p-3 shadow-shadow"
+            className="min-h-[96px] rounded-md border-4 border-dashed border-foreground bg-secondary-background p-3 shadow-shadow transition-transform duration-150 ease-out hover:-translate-y-0.5"
         >
             <p className="text-xs uppercase text-foreground/60">Prompt bar</p>
             {isEmpty && (
@@ -464,11 +514,17 @@ function SortableBlock({
     block: string;
     onRemove: () => void;
 }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id,
+        data: { block },
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        transition,
+        // Disable transition while dragging to stop the "slow chase" lag behind the pointer
+        transition: isDragging ? "none" : transition ?? "transform 150ms ease-out, box-shadow 150ms ease-out",
+        opacity: isDragging ? 0 : 1, // hide original while overlay follows pointer
+        cursor: isDragging ? "grabbing" : "grab",
     };
 
     return (
@@ -478,10 +534,18 @@ function SortableBlock({
             onClick={onRemove}
             {...listeners}
             {...attributes}
-            className="rounded-md border-4 border-foreground bg-main px-2 py-1 text-xs font-semibold shadow-shadow transition hover:-translate-y-0.5 touch-none cursor-move"
+            className="rounded-md border-4 border-foreground bg-main px-2 py-1 text-xs font-semibold shadow-shadow hover:-translate-y-0.5 hover:rotate-1 hover:shadow-lg touch-none"
         >
             {block}
         </button>
+    );
+}
+
+function OverlayBlock({ label }: { label: string }) {
+    return (
+        <div className="rounded-md border-4 border-foreground bg-main px-3 py-2 text-sm font-semibold shadow-shadow pointer-events-none transition-transform duration-150 ease-out">
+            {label}
+        </div>
     );
 }
 
@@ -491,9 +555,9 @@ function RemovalZone() {
     return (
         <div
             ref={setNodeRef}
-            className={`flex min-h-[96px] items-center justify-center rounded-md border-4 border-dashed px-4 py-3 shadow-shadow transition-colors ${
+            className={`flex min-h-[96px] items-center justify-center rounded-md border-4 border-dashed px-4 py-3 shadow-shadow transition-colors transition-transform duration-150 ease-out ${
                 isOver
-                    ? "border-red-600 bg-red-100"
+                    ? "border-red-600 bg-red-100 scale-[1.02]"
                     : "border-foreground/40 bg-secondary-background"
             }`}
         >

@@ -9,7 +9,7 @@ export async function GET(
 ) {
     try {
         const { sectionId } = await params;
-        const session = requireChildSession(req);
+        const session = await requireChildSession(req);
         const progress = await getSectionProgress(session.childId, sectionId);
         return NextResponse.json({ progress });
     } catch (err: unknown) {
@@ -24,7 +24,7 @@ export async function POST(
 ) {
     try {
         const { sectionId } = await params;
-        const session = requireChildSession(req);
+        const session = await requireChildSession(req);
         const body = await req.json();
         await saveSectionProgress(session.childId, sectionId, body);
         return NextResponse.json({ ok: true });

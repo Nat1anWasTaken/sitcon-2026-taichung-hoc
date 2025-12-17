@@ -73,8 +73,10 @@ export function clearChildSessionCookie(res: NextResponse) {
     });
 }
 
-export function requireChildSession(req?: NextRequest): ChildSession {
-    const token = req ? req.cookies.get(COOKIE_NAME)?.value : cookies().get(COOKIE_NAME)?.value;
+export async function requireChildSession(req?: NextRequest): Promise<ChildSession> {
+    const token = req
+        ? req.cookies.get(COOKIE_NAME)?.value
+        : (await cookies()).get(COOKIE_NAME)?.value;
     const session = parseChildSessionToken(token);
     if (!session) {
         throw new Error("No valid child session");
