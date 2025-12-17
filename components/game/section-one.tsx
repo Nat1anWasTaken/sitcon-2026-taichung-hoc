@@ -8,7 +8,6 @@ import {
   DragEndEvent,
   useDraggable,
   useDroppable,
-  DragOverlay,
   closestCenter,
 } from "@dnd-kit/core";
 import {
@@ -134,7 +133,7 @@ export function SectionOneGame() {
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-  }, [levelConfig?.blocks, levelConfig?.id]);
+  }, [levelConfig?.blocks]);
 
   useEffect(() => {
     if (phaseConfig?.mode === "blocks" && shuffledBlocks.length) {
@@ -329,8 +328,6 @@ function BlockBuilder({
   selected: string[];
   onSelect: (blocks: string[]) => void;
 }) {
-  const [activeId, setActiveId] = useState<string | null>(null);
-
   // Create unique IDs for selected blocks
   const selectedWithIds = useMemo(
     () => selected.map((block, idx) => ({ id: `selected-${idx}`, block })),
@@ -339,7 +336,6 @@ function BlockBuilder({
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
 
     if (!over) return;
 
@@ -393,7 +389,6 @@ function BlockBuilder({
   return (
     <DndContext
       collisionDetection={closestCenter}
-      onDragStart={(event) => setActiveId(event.active.id.toString())}
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-3">
