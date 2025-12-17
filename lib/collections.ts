@@ -30,8 +30,8 @@ const progressConverter: FirestoreDataConverter<SectionProgress> = {
 const cueConverter: FirestoreDataConverter<GameCue> = {
     toFirestore: (data) => data,
     fromFirestore: (snap) => {
-        const { id: _ignored, ...rest } = snap.data() as GameCue;
-        return { ...rest, id: snap.id };
+        const data = snap.data() as GameCue;
+        return { ...data, id: snap.id };
     },
 };
 

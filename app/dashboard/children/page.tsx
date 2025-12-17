@@ -1,7 +1,15 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition } from "react";
-import { ArrowLeft, KeyRound, Loader2, MoreHorizontal, Pencil } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import {
+    ArrowLeft,
+    Flag,
+    KeyRound,
+    Loader2,
+    MoreHorizontal,
+    Pencil,
+    SlidersHorizontal,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +24,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
     Table,
     TableBody,
@@ -30,6 +46,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { useChildProgress } from "@/hooks/use-child-progress";
 import { useChildren } from "@/hooks/use-children";
 import {
     createChildAccount,
@@ -37,6 +54,9 @@ import {
     setChildStatus,
     updateChildName,
 } from "@/lib/child-accounts";
+import { getDefaultSectionProgress, saveChildSectionProgress } from "@/lib/child-progress";
+import { SectionConfig, allSections } from "@/lib/game/config";
+import { SectionProgress } from "@/lib/game-types";
 import { ChildAccount } from "@/lib/types";
 
 const formatDate = (ts?: ChildAccount["updatedAt"]) =>
@@ -46,6 +66,7 @@ export default function ChildrenPage() {
     const { children, loading, error } = useChildren();
     const [filterStatus, setFilterStatus] = useState<"all" | "active" | "disabled">("all");
     const [createOpen, setCreateOpen] = useState(false);
+    const [progressChild, setProgressChild] = useState<ChildAccount | null>(null);
     const [formState, setFormState] = useState({
         childId: "",
         seatNumber: "",
@@ -167,7 +188,11 @@ export default function ChildrenPage() {
                                 </TableRow>
                             )}
                             {filtered.map((child) => (
-                                <ChildRow key={child.childId} child={child} />
+                                <ChildRow
+                                    key={child.childId}
+                                    child={child}
+                                    onProgress={() => setProgressChild(child)}
+                                />
                             ))}
                         </TableBody>
                     </Table>
@@ -248,11 +273,20 @@ export default function ChildrenPage() {
                     </form>
                 </div>
             )}
+
+            <ProgressSheet
+                child={progressChild}
+                sections={allSections}
+                open={!!progressChild}
+                onOpenChange={(open) => {
+                    if (!open) setProgressChild(null);
+                }}
+            />
         </div>
     );
 }
 
-function ChildRow({ child }: { child: ChildAccount }) {
+function ChildRow({ child, onProgress }: { child: ChildAccount; onProgress: () => void }) {
     const [openEdit, setOpenEdit] = useState(false);
     const [openReset, setOpenReset] = useState(false);
     const [name, setName] = useState(child.name ?? "");
@@ -305,6 +339,10 @@ function ChildRow({ child }: { child: ChildAccount }) {
                             <DropdownMenuItem onClick={() => setOpenReset(true)}>
                                 <KeyRound className="mr-2 h-4 w-4" />
                                 Reset password
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={onProgress}>
+                                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                                Progress
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={toggleStatus}>
                                 {disabled ? "Enable account" : "Disable account"}
@@ -381,5 +419,249 @@ function InlineDialog({
                 <div className="mt-4">{children}</div>
             </div>
         </div>
+    );
+}
+
+function ProgressSheet({
+    child,
+    open,
+    onOpenChange,
+    sections,
+}: {
+    child: ChildAccount | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    sections: SectionConfig[];
+}) {
+    const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
+    const { progress, loading, error } = useChildProgress(child?.childId ?? "", sectionIds);
+    const [drafts, setDrafts] = useState<Record<string, SectionProgress>>({});
+    const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
+    const [busyId, setBusyId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!open || !child) return;
+        setDrafts(progress);
+        setNotice(null);
+    }, [open, child, progress]);
+
+    if (!child) return null;
+
+    const updateDraft = (
+        sectionId: string,
+        updater: (curr: SectionProgress) => SectionProgress
+    ) => {
+        setDrafts((prev) => {
+            const curr = prev[sectionId] ?? getDefaultSectionProgress(sectionId);
+            return {
+                ...prev,
+                [sectionId]: updater(curr),
+            };
+        });
+    };
+
+    const handleSave = async (sectionId: string) => {
+        const payload = drafts[sectionId] ?? getDefaultSectionProgress(sectionId);
+        setBusyId(sectionId);
+        setNotice(null);
+        try {
+            await saveChildSectionProgress(child.childId, sectionId, {
+                currentLevel: payload.currentLevel,
+                currentPhase: payload.currentPhase,
+                phase1Complete: payload.phase1Complete,
+                phase2Complete: payload.phase2Complete,
+                phase3Complete: payload.phase3Complete,
+            });
+            setNotice({ tone: "info", text: "Progress updated." });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to save progress.";
+            setNotice({ tone: "error", text: message });
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    return (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="right" className="sm:max-w-xl">
+                <SheetHeader className="border-b-4 border-border bg-secondary-background">
+                    <SheetTitle>Progress controls</SheetTitle>
+                    <SheetDescription>
+                        Fine-tune phases and levels for {child.name ?? child.childId}.
+                    </SheetDescription>
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase text-foreground/60">
+                        <Badge variant="outline" className="border-2">
+                            Seat {child.seatNumber}
+                        </Badge>
+                        <Badge variant="secondary" className="border-2 font-mono uppercase">
+                            {child.childId}
+                        </Badge>
+                    </div>
+                </SheetHeader>
+
+                <div className="space-y-4 p-4">
+                    {notice && (
+                        <div
+                            className={`rounded-md border-4 px-3 py-2 text-sm font-semibold shadow-shadow ${
+                                notice.tone === "error"
+                                    ? "border-destructive text-destructive bg-secondary-background"
+                                    : "border-foreground bg-secondary-background"
+                            }`}
+                        >
+                            {notice.text}
+                        </div>
+                    )}
+                    {error && (
+                        <div className="rounded-md border-4 border-destructive bg-secondary-background px-3 py-2 text-sm font-semibold text-destructive shadow-shadow">
+                            {error}
+                        </div>
+                    )}
+
+                    {sections.map((section) => {
+                        const draft = drafts[section.id] ?? getDefaultSectionProgress(section.id);
+                        const activePhase = section.phases[draft.currentPhase - 1];
+                        const levels = activePhase?.levels ?? [];
+                        return (
+                            <Card key={section.id}>
+                                <CardHeader className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <Flag className="h-4 w-4 text-foreground/70" />
+                                        <CardTitle className="text-lg">{section.title}</CardTitle>
+                                    </div>
+                                    <CardDescription className="text-sm">
+                                        Phase {draft.currentPhase} · Level {draft.currentLevel}{" "}
+                                        {loading ? "(loading…)" : ""}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label>Phase</Label>
+                                            <Select
+                                                value={String(draft.currentPhase)}
+                                                onValueChange={(v) =>
+                                                    updateDraft(section.id, (curr) => ({
+                                                        ...curr,
+                                                        currentPhase: Number(
+                                                            v
+                                                        ) as SectionProgress["currentPhase"],
+                                                        currentLevel: 1,
+                                                    }))
+                                                }
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {section.phases.map((phase, idx) => (
+                                                        <SelectItem
+                                                            key={phase.id}
+                                                            value={String(idx + 1)}
+                                                        >
+                                                            Phase {idx + 1} — {phase.title}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Level</Label>
+                                            <Select
+                                                value={String(draft.currentLevel)}
+                                                onValueChange={(v) =>
+                                                    updateDraft(section.id, (curr) => ({
+                                                        ...curr,
+                                                        currentLevel: Number(v),
+                                                    }))
+                                                }
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {levels.map((level, idx) => (
+                                                        <SelectItem
+                                                            key={level.id}
+                                                            value={String(idx + 1)}
+                                                        >
+                                                            Level {idx + 1} — {level.target}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 rounded-md border-2 border-border bg-secondary-background p-3 shadow-shadow">
+                                        <p className="text-xs font-semibold uppercase text-foreground/70">
+                                            Phase completion
+                                        </p>
+                                        <div className="space-y-2">
+                                            {section.phases.map((phase, idx) => {
+                                                const key =
+                                                    `phase${idx + 1}Complete` as keyof SectionProgress;
+                                                return (
+                                                    <div
+                                                        key={phase.id}
+                                                        className="flex items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2"
+                                                    >
+                                                        <div>
+                                                            <div className="text-sm font-semibold">
+                                                                Phase {idx + 1}: {phase.title}
+                                                            </div>
+                                                            <div className="text-xs text-foreground/70">
+                                                                Mark complete to skip gates.
+                                                            </div>
+                                                        </div>
+                                                        <Switch
+                                                            checked={!!draft[key]}
+                                                            onCheckedChange={(checked) =>
+                                                                updateDraft(section.id, (curr) => ({
+                                                                    ...curr,
+                                                                    [key]: checked,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() =>
+                                                updateDraft(section.id, () =>
+                                                    getDefaultSectionProgress(section.id)
+                                                )
+                                            }
+                                            disabled={busyId === section.id}
+                                        >
+                                            Reset to start
+                                        </Button>
+                                        <div className="flex-1" />
+                                        <Button
+                                            onClick={() => handleSave(section.id)}
+                                            disabled={busyId === section.id}
+                                        >
+                                            {busyId === section.id ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    Saving…
+                                                </>
+                                            ) : (
+                                                "Save changes"
+                                            )}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
+            </SheetContent>
+        </Sheet>
     );
 }
