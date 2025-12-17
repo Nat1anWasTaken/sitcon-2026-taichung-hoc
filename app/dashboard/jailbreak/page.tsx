@@ -1,7 +1,18 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition } from "react";
-import { AlertTriangle, Flame, LayoutDashboard, Loader2, RefreshCcw, Swords } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import {
+    AlertTriangle,
+    Clock3,
+    Flame,
+    LayoutDashboard,
+    Library,
+    Loader2,
+    PenLine,
+    RefreshCcw,
+    Swords,
+    Trash2,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,14 +27,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { useJailbreakMatches, useJailbreakThemes } from "@/hooks/use-jailbreak";
 import { useChildren } from "@/hooks/use-children";
 import {
     createJailbreakMatch,
     createJailbreakTheme,
+    deleteJailbreakTheme,
     resetMatchToTheme,
+    updateJailbreakTheme,
 } from "@/lib/jailbreak-admin";
-import { JailbreakDifficulty, JailbreakMatch } from "@/lib/jailbreak-types";
+import { JailbreakDifficulty, JailbreakMatch, JailbreakTheme } from "@/lib/jailbreak-types";
 
 export default function JailbreakAdminPage() {
     const { themes, loading: themesLoading } = useJailbreakThemes();
@@ -39,13 +61,37 @@ export default function JailbreakAdminPage() {
     });
     const [themeMessage, setThemeMessage] = useState<string | null>(null);
     const [matchMessage, setMatchMessage] = useState<string | null>(null);
+    const [editingTheme, setEditingTheme] = useState<JailbreakTheme | null>(null);
+    const [editForm, setEditForm] = useState({
+        title: "",
+        description: "",
+        adminPrompt: "",
+        breachCriteria: "",
+        difficulty: "medium" as JailbreakDifficulty,
+    });
+    const [editMessage, setEditMessage] = useState<string | null>(null);
     const [matchForm, setMatchForm] = useState({
         attacker: "",
         defender: "",
         themeId: "",
     });
     const [busyTheme, startBusyTheme] = useTransition();
+    const [busyEdit, startBusyEdit] = useTransition();
+    const [busyDelete, setBusyDelete] = useState(false);
     const [busyMatch, startBusyMatch] = useTransition();
+
+    useEffect(() => {
+        if (editingTheme) {
+            setEditForm({
+                title: editingTheme.title,
+                description: editingTheme.description,
+                adminPrompt: editingTheme.adminPrompt,
+                breachCriteria: editingTheme.breachCriteria,
+                difficulty: editingTheme.difficulty,
+            });
+            setEditMessage(null);
+        }
+    }, [editingTheme]);
 
     const handleThemeSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -66,6 +112,41 @@ export default function JailbreakAdminPage() {
                 setThemeMessage(message);
             }
         });
+    };
+
+    const handleThemeUpdate = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!editingTheme) return;
+        setEditMessage(null);
+        startBusyEdit(async () => {
+            try {
+                await updateJailbreakTheme(editingTheme.id, editForm);
+                setEditMessage("Theme updated.");
+                setEditingTheme(null);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : "Failed to update theme";
+                setEditMessage(message);
+            }
+        });
+    };
+
+    const handleThemeDelete = async () => {
+        if (!editingTheme) return;
+        const confirmed = window.confirm(
+            "Delete this theme? Existing matches keep their copy, but new matches will no longer see it."
+        );
+        if (!confirmed) return;
+        setBusyDelete(true);
+        setEditMessage(null);
+        try {
+            await deleteJailbreakTheme(editingTheme.id);
+            setEditingTheme(null);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to delete theme";
+            setEditMessage(message);
+        } finally {
+            setBusyDelete(false);
+        }
     };
 
     const handleMatchCreate = (e: FormEvent<HTMLFormElement>) => {
@@ -214,6 +295,82 @@ export default function JailbreakAdminPage() {
             <Card>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
+                        <CardTitle>Theme library</CardTitle>
+                        <CardDescription>Review, tweak, or retire existing jailbreak levels.</CardDescription>
+                    </div>
+                    <Badge variant="outline" className="gap-1">
+                        <Library className="h-4 w-4" />
+                        {themes.length} saved
+                    </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {themesLoading ? (
+                        <div className="rounded-md border-4 border-border bg-secondary-background px-4 py-6 text-sm font-semibold shadow-shadow">
+                            Loading themes…
+                        </div>
+                    ) : themes.length === 0 ? (
+                        <div className="rounded-md border-4 border-dashed border-border px-4 py-8 text-center text-sm font-semibold text-foreground/70">
+                            No themes yet. Save one above to see it here.
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead className="w-24">Difficulty</TableHead>
+                                    <TableHead className="w-40">Updated</TableHead>
+                                    <TableHead className="w-32 text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {themes.map((theme) => (
+                                    <TableRow key={theme.id}>
+                                        <TableCell>
+                                            <div className="font-semibold">{theme.title}</div>
+                                            <div className="text-xs text-foreground/70">
+                                                {theme.description}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="capitalize">
+                                                {theme.difficulty}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-xs font-semibold text-foreground/70">
+                                            <div className="flex items-center gap-1">
+                                                <Clock3 className="h-4 w-4" />
+                                                {theme.updatedAt?.toDate
+                                                    ? theme.updatedAt
+                                                          .toDate()
+                                                          .toLocaleDateString(undefined, {
+                                                              month: "short",
+                                                              day: "numeric",
+                                                          })
+                                                    : "—"}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setEditingTheme(theme)}
+                                                className="gap-1"
+                                            >
+                                                <PenLine className="h-4 w-4" />
+                                                Edit
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
                         <CardTitle>Battle monitor</CardTitle>
                         <CardDescription>Pair students, assign a theme, and oversee progress.</CardDescription>
                     </div>
@@ -315,6 +472,131 @@ export default function JailbreakAdminPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <Dialog
+                open={Boolean(editingTheme)}
+                onOpenChange={(open) => {
+                    if (!open) setEditingTheme(null);
+                }}
+            >
+                <DialogContent className="max-w-3xl">
+                    <form className="space-y-4" onSubmit={handleThemeUpdate}>
+                        <DialogHeader>
+                            <DialogTitle>Edit theme</DialogTitle>
+                            <DialogDescription>
+                                Adjust copy, difficulty, or referee guidance. Changes apply to new matches.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="edit-title">Title</Label>
+                            <Input
+                                id="edit-title"
+                                required
+                                value={editForm.title}
+                                onChange={(e) => setEditForm((s) => ({ ...s, title: e.target.value }))}
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="edit-description">Description</Label>
+                            <Textarea
+                                id="edit-description"
+                                required
+                                className="min-h-[96px]"
+                                value={editForm.description}
+                                onChange={(e) =>
+                                    setEditForm((s) => ({ ...s, description: e.target.value }))
+                                }
+                            />
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <div className="space-y-1">
+                                <Label htmlFor="edit-admin">Admin prompt</Label>
+                                <Textarea
+                                    id="edit-admin"
+                                    required
+                                    className="min-h-[120px]"
+                                    value={editForm.adminPrompt}
+                                    onChange={(e) =>
+                                        setEditForm((s) => ({ ...s, adminPrompt: e.target.value }))
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="edit-breach">Breach criteria</Label>
+                                <Textarea
+                                    id="edit-breach"
+                                    required
+                                    className="min-h-[120px]"
+                                    value={editForm.breachCriteria}
+                                    onChange={(e) =>
+                                        setEditForm((s) => ({ ...s, breachCriteria: e.target.value }))
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Difficulty</Label>
+                            <Select
+                                value={editForm.difficulty}
+                                onValueChange={(v) =>
+                                    setEditForm((s) => ({ ...s, difficulty: v as JailbreakDifficulty }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="easy">Easy</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="hard">Hard</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {editMessage && (
+                            <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
+                                {editMessage}
+                            </div>
+                        )}
+
+                        <DialogFooter>
+                            <div className="flex w-full items-center justify-between gap-3">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="text-red-700 hover:text-red-800"
+                                    disabled={busyEdit || busyDelete}
+                                    onClick={handleThemeDelete}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete theme
+                                </Button>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => setEditingTheme(null)}
+                                        disabled={busyEdit}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" disabled={busyEdit}>
+                                        {busyEdit ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Saving…
+                                            </>
+                                        ) : (
+                                            "Save changes"
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

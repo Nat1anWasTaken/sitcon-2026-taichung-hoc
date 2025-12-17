@@ -29,6 +29,17 @@ export async function createJailbreakTheme(input: CreateThemeInput) {
     await addDoc(jailbreakThemesCollection, payload);
 }
 
+export async function updateJailbreakTheme(themeId: string, input: CreateThemeInput) {
+    await updateDoc(jailbreakThemeDoc(themeId), {
+        ...input,
+        updatedAt: serverTimestamp(),
+    });
+}
+
+export async function deleteJailbreakTheme(themeId: string) {
+    await deleteDoc(jailbreakThemeDoc(themeId));
+}
+
 type CreateMatchInput = {
     themeId: string;
     attackerChildId: string;

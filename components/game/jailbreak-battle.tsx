@@ -52,7 +52,8 @@ export function JailbreakBattle() {
                 loading: false,
                 data: null,
                 error: locked
-                    ? "Section 2 is locked. Wait for the admin to start the Jailbreak Battle."
+                    ? data.error ||
+                      "Section 2 is locked or Section 1 is incomplete. Finish Section 1 and wait for the admin cue."
                     : data.error || "No match yet",
             });
             return;
@@ -431,7 +432,7 @@ function LogList({ logs }: { logs: PublicMatchView["logs"] }) {
                     className="rounded-md border-4 border-foreground bg-secondary-background p-3 shadow-shadow"
                 >
                     <div className="flex items-center justify-between text-xs font-semibold uppercase text-foreground/60">
-                        <span>{new Date(log.createdAt.toDate()).toLocaleTimeString()}</span>
+                        <span>{new Date(log.createdAt).toLocaleTimeString()}</span>
                         <span
                             className={
                                 log.breach ? "text-destructive" : "text-green-700 dark:text-green-500"

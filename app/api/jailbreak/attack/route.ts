@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { recordAttackAttempt, requireSectionTwoCue } from "@/lib/server/jailbreak";
+import {
+    recordAttackAttempt,
+    requireSectionOneComplete,
+    requireSectionTwoCue,
+} from "@/lib/server/jailbreak";
 import { requireChildSession } from "@/lib/server/session";
 
 export async function POST(req: NextRequest) {
@@ -18,6 +22,7 @@ export async function POST(req: NextRequest) {
         }
 
         await requireSectionTwoCue();
+        await requireSectionOneComplete(session.childId);
         const match = await recordAttackAttempt({
             childId: session.childId,
             matchId,
@@ -27,7 +32,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ match });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Attack failed";
-        return NextResponse.json({ error: message }, { status: 400 });
+        const status = message.startsWith("Section 2") || message.startsWith("Complete Section 1")
+            ? 403
+            : 400;
+        return NextResponse.json({ error: message }, { status });
     }
 }
 

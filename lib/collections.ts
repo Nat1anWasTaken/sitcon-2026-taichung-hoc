@@ -32,10 +32,6 @@ const progressConverter: FirestoreDataConverter<SectionProgress> = {
 const cueConverter: FirestoreDataConverter<GameCue> = {
     toFirestore: (data) => data,
     fromFirestore: (snap) => {
-<<<<<<< HEAD
-        const data = snap.data() as GameCue;
-        return { ...data, id: snap.id };
-=======
         const rest = snap.data() as GameCue;
         return { ...rest, id: snap.id };
     },
@@ -62,7 +58,6 @@ const jailbreakTurnConverter: FirestoreDataConverter<JailbreakTurn> = {
     fromFirestore: (snap) => {
         const rest = snap.data() as JailbreakTurn;
         return { ...rest, id: snap.id };
->>>>>>> feat/section-2
     },
 };
 
@@ -98,18 +93,16 @@ export const gameCuesCollection = collection(firestoreDb, "gameCues").withConver
 export const gameCueDoc = (cueId: string) =>
     doc(gameCuesCollection, cueId) as DocumentReference<GameCue>;
 
-export const jailbreakThemesCollection = collection(
-    firestoreDb,
-    "jailbreakThemes"
-).withConverter(jailbreakThemeConverter) as CollectionReference<JailbreakTheme>;
+export const jailbreakThemesCollection = collection(firestoreDb, "jailbreakThemes").withConverter(
+    jailbreakThemeConverter
+) as CollectionReference<JailbreakTheme>;
 
 export const jailbreakThemeDoc = (themeId: string) =>
     doc(jailbreakThemesCollection, themeId) as DocumentReference<JailbreakTheme>;
 
-export const jailbreakMatchesCollection = collection(
-    firestoreDb,
-    "jailbreakMatches"
-).withConverter(jailbreakMatchConverter) as CollectionReference<JailbreakMatch>;
+export const jailbreakMatchesCollection = collection(firestoreDb, "jailbreakMatches").withConverter(
+    jailbreakMatchConverter
+) as CollectionReference<JailbreakMatch>;
 
 export const jailbreakMatchDoc = (matchId: string) =>
     doc(jailbreakMatchesCollection, matchId) as DocumentReference<JailbreakMatch>;
@@ -119,7 +112,6 @@ export const jailbreakTurnsCollection = (matchId: string) =>
         jailbreakTurnConverter
     ) as CollectionReference<JailbreakTurn>;
 
-export const jailbreakTurnsGroup = collectionGroup(
-    firestoreDb,
-    "turns"
-).withConverter(jailbreakTurnConverter);
+export const jailbreakTurnsGroup = collectionGroup(firestoreDb, "turns").withConverter(
+    jailbreakTurnConverter
+);

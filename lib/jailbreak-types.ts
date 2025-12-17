@@ -68,6 +68,6 @@ export type PublicMatchView = {
         breach: boolean;
         refereeReason?: string;
         tokensUsed?: number;
-        createdAt: Timestamp;
+        createdAt: string; // ISO string; serialized for client safety
     }>;
 };

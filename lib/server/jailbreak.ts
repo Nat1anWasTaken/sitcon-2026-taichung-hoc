@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { generateJailbreakReply, judgeJailbreakBreach } from "@/lib/ai";
 import { adminFirestore } from "../firebase-admin";
 import { getCue } from "./cues";
+import { getSectionProgress } from "./progress";
 import {
     JailbreakMatch,
     JailbreakTurn,
@@ -16,11 +17,20 @@ function assertAdminDb() {
 }
 
 const START_SECTION_TWO_CUE = "start-section-2";
+const SECTION_ONE_ID = "section-1";
 
 export async function requireSectionTwoCue() {
     const cue = await getCue(START_SECTION_TWO_CUE);
     if (!cue?.active) {
         throw new Error("Section 2 is locked. Ask the admin to start it.");
+    }
+}
+
+export async function requireSectionOneComplete(childId: string) {
+    const progress = await getSectionProgress(childId, SECTION_ONE_ID);
+    const done = progress.phase3Complete === true;
+    if (!done) {
+        throw new Error("Complete Section 1 first.");
     }
 }
 
@@ -102,7 +112,7 @@ function sanitizeMatch(
                 breach: t.breach,
                 refereeReason: t.refereeReason,
                 tokensUsed: t.tokensUsed,
-                createdAt: t.createdAt,
+                createdAt: t.createdAt.toDate().toISOString(),
             }))
             .reverse(),
     };
