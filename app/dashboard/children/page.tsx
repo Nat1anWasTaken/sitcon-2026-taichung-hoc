@@ -493,7 +493,7 @@ function ProgressSheet({
                         <Badge variant="outline" className="border-2">
                             Seat {child.seatNumber}
                         </Badge>
-                        <Badge variant="secondary" className="border-2 font-mono uppercase">
+                        <Badge variant="neutral" className="border-2 font-mono uppercase">
                             {child.childId}
                         </Badge>
                     </div>

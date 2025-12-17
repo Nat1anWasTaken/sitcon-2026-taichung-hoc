@@ -46,6 +46,31 @@ export function SectionOneGame() {
     const [match, setMatch] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(false);
 
+    const refreshState = useCallback(async () => {
+        try {
+            const [progRes, cuesRes] = await Promise.all([
+                fetch(`/api/game/progress/${SECTION_ID}`, { credentials: "include" }),
+                fetch("/api/game/cues", { credentials: "include" }),
+            ]);
+
+            if (progRes.ok) {
+                const progData = await progRes.json();
+                setProgress(progData.progress);
+                setTypedPrompt(progData.progress?.lastPrompt ?? "");
+                setImageUrl(progData.progress?.lastImageUrl ?? null);
+                setMatch(progData.progress?.lastMatch ?? null);
+                setFeedback(progData.progress?.lastFeedback ?? null);
+            }
+
+            if (cuesRes.ok) {
+                const cuesData = await cuesRes.json();
+                setCues(cuesData.cues);
+            }
+        } catch (err) {
+            console.error("Failed to refresh game state", err);
+        }
+    }, []);
+
     useEffect(() => {
         let active = true;
         const loadState = async () => {
@@ -158,31 +183,6 @@ export function SectionOneGame() {
             setLoading(false);
         }
     };
-
-    const refreshState = useCallback(async () => {
-        try {
-            const [progRes, cuesRes] = await Promise.all([
-                fetch(`/api/game/progress/${SECTION_ID}`, { credentials: "include" }),
-                fetch("/api/game/cues", { credentials: "include" }),
-            ]);
-
-            if (progRes.ok) {
-                const progData = await progRes.json();
-                setProgress(progData.progress);
-                setTypedPrompt(progData.progress?.lastPrompt ?? "");
-                setImageUrl(progData.progress?.lastImageUrl ?? null);
-                setMatch(progData.progress?.lastMatch ?? null);
-                setFeedback(progData.progress?.lastFeedback ?? null);
-            }
-
-            if (cuesRes.ok) {
-                const cuesData = await cuesRes.json();
-                setCues(cuesData.cues);
-            }
-        } catch (err) {
-            console.error("Failed to refresh game state", err);
-        }
-    }, []);
 
     if (!session || !progress || !phaseConfig || !levelConfig) {
         return (
