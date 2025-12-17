@@ -20,6 +20,11 @@ const cueCatalog = [
         title: "Unlock bonus blocks",
         description: "Adds extra descriptive blocks during Phase 1.",
     },
+    {
+        id: "start-section-2",
+        title: "Start Section 2 (Jailbreak)",
+        description: "Allows kids to enter the Section 2 Jailbreak Battle.",
+    },
 ];
 
 export default function CuesPage() {

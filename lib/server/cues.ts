@@ -14,14 +14,23 @@ export async function listActiveCues(): Promise<GameCue[]> {
     const db = assertAdminDb();
     const snap = await db.collection(CUES_COLLECTION).where("active", "==", true).get();
     return snap.docs.map((d) => {
+<<<<<<< HEAD
         const data = d.data() as GameCue;
         return { ...data, id: d.id };
+=======
+        const rest = d.data() as GameCue;
+        return { ...rest, id: d.id };
+>>>>>>> feat/section-2
     });
 }
 
 export async function setCueState(cueId: string, data: Partial<GameCue>) {
     const db = assertAdminDb();
+<<<<<<< HEAD
     const safeData = { ...data };
+=======
+    const safeData = { ...data } as Partial<GameCue> & Record<string, unknown>;
+>>>>>>> feat/section-2
     delete safeData.id;
     await db
         .collection(CUES_COLLECTION)
@@ -42,6 +51,11 @@ export async function getCue(cueId: string): Promise<GameCue | null> {
     const db = assertAdminDb();
     const snap = await db.collection(CUES_COLLECTION).doc(cueId).get();
     if (!snap.exists) return null;
+<<<<<<< HEAD
     const data = snap.data() as GameCue;
     return { ...data, id: snap.id };
+=======
+    const rest = snap.data() as GameCue;
+    return { ...rest, id: snap.id };
+>>>>>>> feat/section-2
 }
