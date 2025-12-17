@@ -66,10 +66,14 @@ export async function buildScoreboardSnapshot(): Promise<ScoreboardSnapshot> {
                         .doc(section.id)
                         .get();
 
-                    const progress = coerceProgress(section.id, progressSnap.data() as ProgressDoc | undefined);
+                    const progress = coerceProgress(
+                        section.id,
+                        progressSnap.data() as ProgressDoc | undefined
+                    );
                     const updatedAt =
-                        (progress.updatedAt as Timestamp | undefined)?.toDate?.()?.toISOString?.() ??
-                        new Date().toISOString();
+                        (progress.updatedAt as Timestamp | undefined)
+                            ?.toDate?.()
+                            ?.toISOString?.() ?? new Date().toISOString();
 
                     return {
                         childId: child.childId || child.docId,

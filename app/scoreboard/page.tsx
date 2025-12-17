@@ -59,7 +59,13 @@ function PhaseTabs({
     );
 }
 
-function SectionTable({ section, phaseFilter }: { section: ScoreboardSection; phaseFilter: string }) {
+function SectionTable({
+    section,
+    phaseFilter,
+}: {
+    section: ScoreboardSection;
+    phaseFilter: string;
+}) {
     const filtered = useMemo(() => {
         if (phaseFilter === "all") return section.rows;
         const phaseNumber = Number(phaseFilter.split("-")[1]);
@@ -93,13 +99,17 @@ function SectionTable({ section, phaseFilter }: { section: ScoreboardSection; ph
                                 Seat {row.seatNumber} · {row.childId}
                             </p>
                             {row.name && (
-                                <p className="text-xs uppercase tracking-tight text-foreground/60">{row.name}</p>
+                                <p className="text-xs uppercase tracking-tight text-foreground/60">
+                                    {row.name}
+                                </p>
                             )}
                             {row.status === "disabled" && <Badge variant="outline">Disabled</Badge>}
                         </div>
                         <div className="space-y-1 text-sm font-semibold sm:text-center">
                             <p>{statusLabel(row)}</p>
-                            <p className="text-xs text-foreground/60">Updated {formatUpdated(row.updatedAt)}</p>
+                            <p className="text-xs text-foreground/60">
+                                Updated {formatUpdated(row.updatedAt)}
+                            </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                             <Badge variant={row.phase3Complete ? "default" : "outline"}>
@@ -119,23 +129,27 @@ export default function ScoreboardPage() {
     const { snapshot, loading, error } = useScoreboard();
     const [phaseTabs, setPhaseTabs] = useState<Record<string, string>>({});
 
-    const sections = snapshot?.sections ?? allSections.map((section) => ({
-        sectionId: section.id,
-        title: section.title,
-        phases: section.phases.length,
-        rows: [],
-    }));
+    const sections =
+        snapshot?.sections ??
+        allSections.map((section) => ({
+            sectionId: section.id,
+            title: section.title,
+            phases: section.phases.length,
+            rows: [],
+        }));
 
     return (
         <div className="min-h-screen bg-background px-4 py-10">
             <div className="mx-auto flex max-w-6xl flex-col gap-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-tight text-foreground/60">Public view</p>
+                        <p className="text-xs uppercase tracking-tight text-foreground/60">
+                            Public view
+                        </p>
                         <h1 className="text-3xl font-bold leading-tight">Live Scoreboard</h1>
                         <p className="max-w-2xl text-sm text-foreground/70">
-                            Watch each seat advance through every section and phase. Updates stream in real
-                            time—no refresh needed.
+                            Watch each seat advance through every section and phase. Updates stream
+                            in real time—no refresh needed.
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -168,12 +182,18 @@ export default function ScoreboardPage() {
                         ))}
                     </TabsList>
                     {sections.map((section) => (
-                        <TabsContent key={section.sectionId} value={section.sectionId} className="space-y-4">
+                        <TabsContent
+                            key={section.sectionId}
+                            value={section.sectionId}
+                            className="space-y-4"
+                        >
                             <Card>
                                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <CardTitle>{section.title}</CardTitle>
-                                        <CardDescription>Track every seat across {section.phases} phases.</CardDescription>
+                                        <CardDescription>
+                                            Track every seat across {section.phases} phases.
+                                        </CardDescription>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
                                         <RadioTower className="h-4 w-4" />
@@ -185,7 +205,10 @@ export default function ScoreboardPage() {
                                         section={section}
                                         active={phaseTabs[section.sectionId] ?? "all"}
                                         onChange={(phase) =>
-                                            setPhaseTabs((prev) => ({ ...prev, [section.sectionId]: phase }))
+                                            setPhaseTabs((prev) => ({
+                                                ...prev,
+                                                [section.sectionId]: phase,
+                                            }))
                                         }
                                     />
                                     <SectionTable

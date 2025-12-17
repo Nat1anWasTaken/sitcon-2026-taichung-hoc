@@ -12,7 +12,10 @@ export async function GET(req: NextRequest) {
     if (mode === "json") {
         try {
             const payload = await buildScoreboardSnapshot();
-            return NextResponse.json(payload, { status: 200, headers: { "Cache-Control": "no-store" } });
+            return NextResponse.json(payload, {
+                status: 200,
+                headers: { "Cache-Control": "no-store" },
+            });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Failed to build scoreboard";
             return NextResponse.json({ error: message }, { status: 500 });
@@ -31,7 +34,11 @@ export async function GET(req: NextRequest) {
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : "scoreboard-error";
-                    controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`));
+                    controller.enqueue(
+                        encoder.encode(
+                            `event: error\ndata: ${JSON.stringify({ error: message })}\n\n`
+                        )
+                    );
                 }
             };
 
