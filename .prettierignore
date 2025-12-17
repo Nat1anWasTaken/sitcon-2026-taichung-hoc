@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+
+# GitHub workflows (to avoid permission issues with lint-action)
+.github/
+
+# Other
+coverage/
+.DS_Store

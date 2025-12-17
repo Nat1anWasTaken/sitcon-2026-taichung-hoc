@@ -1,0 +1,49 @@
+name: Lint
+
+on:
+    push:
+        branches: ["main", "claude/**"]
+    pull_request:
+        branches: ["main"]
+
+permissions:
+    checks: write
+    contents: read
+    pull-requests: write
+
+jobs:
+    lint:
+        name: Run Linters
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Run Linters with Annotations
+              uses: wearerequired/lint-action@v2
+              with:
+                  eslint: true
+                  eslint_extensions: js,jsx,ts,tsx,mjs
+                  prettier: true
+                  prettier_extensions: js,jsx,ts,tsx,mjs,json,css,md
+
+            - name: Run TypeScript type check
+              run: pnpm type-check
+
+            - name: Build check
+              run: pnpm build
