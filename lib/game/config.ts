@@ -122,7 +122,10 @@ export const sectionOne: SectionConfig = {
     ],
 };
 
+export const allSections: SectionConfig[] = [sectionOne];
+
 export function getSectionConfig(sectionId: string): SectionConfig {
-    if (sectionId === sectionOne.id) return sectionOne;
-    throw new Error(`Unknown section ${sectionId}`);
+    const match = allSections.find((s) => s.id === sectionId);
+    if (!match) throw new Error(`Unknown section ${sectionId}`);
+    return match;
 }

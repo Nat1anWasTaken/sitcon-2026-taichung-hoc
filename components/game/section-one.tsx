@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Rabbit, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -47,42 +47,30 @@ export function SectionOneGame() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const bootstrap = async () => {
+        let active = true;
+        const loadState = async () => {
             const meRes = await fetch("/api/child/me", { credentials: "include" });
             if (!meRes.ok) {
                 router.replace("/");
                 return;
             }
             const { session: me } = await meRes.json();
+            if (!active) return;
             setSession(me);
 
-            const progRes = await fetch(`/api/game/progress/${SECTION_ID}`, {
-                credentials: "include",
-            });
-            const progData = await progRes.json();
-            setProgress(progData.progress);
-            setTypedPrompt(progData.progress?.lastPrompt ?? "");
-
-            const cuesRes = await fetch("/api/game/cues", { credentials: "include" });
-            const cuesData = await cuesRes.json();
-            setCues(cuesData.cues);
-            setImageUrl(progData.progress?.lastImageUrl ?? null);
-            setMatch(progData.progress?.lastMatch ?? null);
-            setFeedback(progData.progress?.lastFeedback ?? null);
+            await refreshState();
         };
-        bootstrap();
-    }, [router]);
+        loadState();
 
-    useEffect(() => {
-        const id = setInterval(async () => {
-            const cuesRes = await fetch("/api/game/cues", { credentials: "include" });
-            if (cuesRes.ok) {
-                const cuesData = await cuesRes.json();
-                setCues(cuesData.cues);
-            }
-        }, 2000);
-        return () => clearInterval(id);
-    }, []);
+        const id = setInterval(() => {
+            refreshState();
+        }, 2500);
+
+        return () => {
+            active = false;
+            clearInterval(id);
+        };
+    }, [router, refreshState]);
 
     const phaseConfig = useMemo(() => {
         if (!progress) return null;
@@ -171,6 +159,31 @@ export function SectionOneGame() {
         }
     };
 
+    const refreshState = useCallback(async () => {
+        try {
+            const [progRes, cuesRes] = await Promise.all([
+                fetch(`/api/game/progress/${SECTION_ID}`, { credentials: "include" }),
+                fetch("/api/game/cues", { credentials: "include" }),
+            ]);
+
+            if (progRes.ok) {
+                const progData = await progRes.json();
+                setProgress(progData.progress);
+                setTypedPrompt(progData.progress?.lastPrompt ?? "");
+                setImageUrl(progData.progress?.lastImageUrl ?? null);
+                setMatch(progData.progress?.lastMatch ?? null);
+                setFeedback(progData.progress?.lastFeedback ?? null);
+            }
+
+            if (cuesRes.ok) {
+                const cuesData = await cuesRes.json();
+                setCues(cuesData.cues);
+            }
+        } catch (err) {
+            console.error("Failed to refresh game state", err);
+        }
+    }, []);
+
     if (!session || !progress || !phaseConfig || !levelConfig) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
@@ -196,7 +209,7 @@ export function SectionOneGame() {
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <Sparkles className="h-4 w-4" />
-                        {phaseConfig.title} · Level {progress.currentLevel}
+                        {sectionOne.title}: {phaseConfig.title} · Level {progress.currentLevel}
                     </div>
                 </header>
 
