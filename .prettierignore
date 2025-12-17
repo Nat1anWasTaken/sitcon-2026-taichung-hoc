@@ -20,6 +20,9 @@ dist/
 .vscode/
 .idea/
 
+# GitHub workflows (to avoid permission issues with lint-action)
+.github/
+
 # Other
 coverage/
 .DS_Store

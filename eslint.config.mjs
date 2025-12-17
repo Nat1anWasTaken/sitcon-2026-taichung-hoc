@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
         "out/**",
         "build/**",
         "next-env.d.ts",
+        // Exclude GitHub workflows to avoid permission issues with lint-action
+        ".github/**",
     ]),
 ]);
 
