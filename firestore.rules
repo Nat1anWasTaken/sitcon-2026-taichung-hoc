@@ -24,6 +24,18 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /jailbreakThemes/{themeId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /jailbreakMatches/{matchId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /jailbreakMatches/{matchId}/turns/{turnId} {
+      allow read, write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

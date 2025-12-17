@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Sparkles, UsersRound } from "lucide-react";
+import { LayoutDashboard, Sparkles, Swords, UsersRound } from "lucide-react";
 import { User } from "firebase/auth";
 
 import { AdminGate } from "@/components/admin/admin-gate";
@@ -29,6 +29,7 @@ const navLinks = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/children", label: "Child Accounts", icon: UsersRound },
     { href: "/dashboard/cues", label: "Cues", icon: Sparkles },
+    { href: "/dashboard/jailbreak", label: "Jailbreak", icon: Swords },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

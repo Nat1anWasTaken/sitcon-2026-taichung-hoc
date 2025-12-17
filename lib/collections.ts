@@ -6,11 +6,13 @@ import {
     doc,
     query,
     where,
+    collectionGroup,
 } from "firebase/firestore";
 
 import { firestoreDb } from "./firebase";
 import { GameCue, SectionProgress } from "./game-types";
 import { AdminProfile, ChildAccount } from "./types";
+import { JailbreakMatch, JailbreakTheme, JailbreakTurn } from "./jailbreak-types";
 
 const adminConverter: FirestoreDataConverter<AdminProfile> = {
     toFirestore: (data) => data,
@@ -30,7 +32,31 @@ const progressConverter: FirestoreDataConverter<SectionProgress> = {
 const cueConverter: FirestoreDataConverter<GameCue> = {
     toFirestore: (data) => data,
     fromFirestore: (snap) => {
-        const { id: _ignored, ...rest } = snap.data() as GameCue;
+        const rest = snap.data() as GameCue;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const jailbreakThemeConverter: FirestoreDataConverter<JailbreakTheme> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as JailbreakTheme;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const jailbreakMatchConverter: FirestoreDataConverter<JailbreakMatch> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as JailbreakMatch;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const jailbreakTurnConverter: FirestoreDataConverter<JailbreakTurn> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as JailbreakTurn;
         return { ...rest, id: snap.id };
     },
 };
@@ -66,3 +92,29 @@ export const gameCuesCollection = collection(firestoreDb, "gameCues").withConver
 
 export const gameCueDoc = (cueId: string) =>
     doc(gameCuesCollection, cueId) as DocumentReference<GameCue>;
+
+export const jailbreakThemesCollection = collection(
+    firestoreDb,
+    "jailbreakThemes"
+).withConverter(jailbreakThemeConverter) as CollectionReference<JailbreakTheme>;
+
+export const jailbreakThemeDoc = (themeId: string) =>
+    doc(jailbreakThemesCollection, themeId) as DocumentReference<JailbreakTheme>;
+
+export const jailbreakMatchesCollection = collection(
+    firestoreDb,
+    "jailbreakMatches"
+).withConverter(jailbreakMatchConverter) as CollectionReference<JailbreakMatch>;
+
+export const jailbreakMatchDoc = (matchId: string) =>
+    doc(jailbreakMatchesCollection, matchId) as DocumentReference<JailbreakMatch>;
+
+export const jailbreakTurnsCollection = (matchId: string) =>
+    collection(firestoreDb, "jailbreakMatches", matchId, "turns").withConverter(
+        jailbreakTurnConverter
+    ) as CollectionReference<JailbreakTurn>;
+
+export const jailbreakTurnsGroup = collectionGroup(
+    firestoreDb,
+    "turns"
+).withConverter(jailbreakTurnConverter);
