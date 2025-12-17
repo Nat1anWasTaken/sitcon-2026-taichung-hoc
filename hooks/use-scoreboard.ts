@@ -32,7 +32,8 @@ export function useScoreboard(): ScoreboardState {
                 }
             } catch (err: unknown) {
                 if (!cancelled) {
-                    const message = err instanceof Error ? err.message : "Unable to load scoreboard";
+                    const message =
+                        err instanceof Error ? err.message : "Unable to load scoreboard";
                     setError(message);
                 }
             }
