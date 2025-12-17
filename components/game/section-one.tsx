@@ -372,7 +372,7 @@ function BlockBuilder({
             const insertAt =
                 overIsPrompt || !overIsSelected
                     ? selected.length
-                    : overSortable?.index ?? selectedWithIds.findIndex((i) => i.id === overId);
+                    : (overSortable?.index ?? selectedWithIds.findIndex((i) => i.id === overId));
 
             const next = [...selected];
             next.splice(insertAt, 0, activeBlockLabel);
@@ -535,7 +535,9 @@ function SortableBlock({
     const style = {
         transform: CSS.Transform.toString(transform),
         // Disable transition while dragging to stop the "slow chase" lag behind the pointer
-        transition: isDragging ? "none" : transition ?? "transform 150ms ease-out, box-shadow 150ms ease-out",
+        transition: isDragging
+            ? "none"
+            : (transition ?? "transform 150ms ease-out, box-shadow 150ms ease-out"),
         opacity: isDragging ? 0 : 1, // hide original while overlay follows pointer
         cursor: isDragging ? "grabbing" : "grab",
     };

@@ -15,9 +15,5 @@ export async function setCueActive(
         createdAt: serverTimestamp(),
         ...(payload !== undefined ? { payload } : {}),
     };
-    await setDoc(
-        gameCueDoc(cueId),
-        data,
-        { merge: true }
-    );
+    await setDoc(gameCueDoc(cueId), data, { merge: true });
 }

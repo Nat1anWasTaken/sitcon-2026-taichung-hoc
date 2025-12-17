@@ -1,12 +1,6 @@
 "use client";
 
-import {
-    DocumentSnapshot,
-    Timestamp,
-    getDoc,
-    serverTimestamp,
-    setDoc,
-} from "firebase/firestore";
+import { DocumentSnapshot, Timestamp, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { sectionProgressDoc } from "./collections";
 import { SectionProgress } from "./game-types";

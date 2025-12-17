@@ -542,7 +542,9 @@ function ProgressSheet({
                                                 onValueChange={(v) =>
                                                     updateDraft(section.id, (curr) => ({
                                                         ...curr,
-                                                        currentPhase: Number(v) as SectionProgress["currentPhase"],
+                                                        currentPhase: Number(
+                                                            v
+                                                        ) as SectionProgress["currentPhase"],
                                                         currentLevel: 1,
                                                     }))
                                                 }
@@ -552,7 +554,10 @@ function ProgressSheet({
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {section.phases.map((phase, idx) => (
-                                                        <SelectItem key={phase.id} value={String(idx + 1)}>
+                                                        <SelectItem
+                                                            key={phase.id}
+                                                            value={String(idx + 1)}
+                                                        >
                                                             Phase {idx + 1} — {phase.title}
                                                         </SelectItem>
                                                     ))}
@@ -575,7 +580,10 @@ function ProgressSheet({
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {levels.map((level, idx) => (
-                                                        <SelectItem key={level.id} value={String(idx + 1)}>
+                                                        <SelectItem
+                                                            key={level.id}
+                                                            value={String(idx + 1)}
+                                                        >
                                                             Level {idx + 1} — {level.target}
                                                         </SelectItem>
                                                     ))}
