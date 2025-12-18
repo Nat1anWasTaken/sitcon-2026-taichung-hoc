@@ -1,6 +1,6 @@
 "use client";
 
-import { addDoc, deleteDoc, getDoc, getDocs, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, deleteDoc, getDoc, getDocs, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
 
 import {
     childDoc,
@@ -10,6 +10,7 @@ import {
     jailbreakThemesCollection,
     jailbreakTurnsCollection,
 } from "./collections";
+import { sectionTwoSeedThemes } from "./game/config";
 import { JailbreakDifficulty, JailbreakMatch, JailbreakTheme } from "./jailbreak-types";
 
 type CreateThemeInput = {
@@ -120,4 +121,23 @@ export async function setMatchStatus(matchId: string, status: JailbreakMatch["st
         status,
         updatedAt: serverTimestamp(),
     });
+}
+
+export async function resetJailbreakToSeed() {
+    const batch = writeBatch(jailbreakThemesCollection.firestore);
+
+    const themesSnap = await getDocs(jailbreakThemesCollection);
+    themesSnap.forEach((doc) => batch.delete(doc.ref));
+
+    const timestamp = serverTimestamp();
+
+    sectionTwoSeedThemes.forEach((theme) => {
+        batch.set(jailbreakThemeDoc(theme.id), {
+            ...theme,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+        });
+    });
+
+    await batch.commit();
 }

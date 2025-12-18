@@ -10,6 +10,7 @@ import {
     Loader2,
     PenLine,
     RefreshCcw,
+    RotateCcw,
     Swords,
     Trash2,
 } from "lucide-react";
@@ -42,6 +43,7 @@ import {
     createJailbreakMatch,
     createJailbreakTheme,
     deleteJailbreakTheme,
+    resetJailbreakToSeed,
     resetMatchToTheme,
     updateJailbreakTheme,
 } from "@/lib/jailbreak-admin";
@@ -79,6 +81,7 @@ export default function JailbreakAdminPage() {
     const [busyEdit, startBusyEdit] = useTransition();
     const [busyDelete, setBusyDelete] = useState(false);
     const [busyMatch, startBusyMatch] = useTransition();
+    const [busyReset, setBusyReset] = useState(false);
 
     useEffect(() => {
         if (editingTheme) {
@@ -166,6 +169,22 @@ export default function JailbreakAdminPage() {
                 setMatchMessage(message);
             }
         });
+    };
+
+    const handleReset = async () => {
+        const confirmReset = window.confirm("Replace all themes with the default seed? This will NOT affect existing matches.");
+        if (!confirmReset) return;
+        setBusyReset(true);
+        setThemeMessage(null);
+        try {
+            await resetJailbreakToSeed();
+            setThemeMessage("Seed themes loaded.");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to reset themes";
+            setThemeMessage(message);
+        } finally {
+            setBusyReset(false);
+        }
     };
 
     const childOptions = useMemo(
@@ -298,10 +317,25 @@ export default function JailbreakAdminPage() {
                         <CardTitle>Theme library</CardTitle>
                         <CardDescription>Review, tweak, or retire existing jailbreak levels.</CardDescription>
                     </div>
-                    <Badge variant="outline" className="gap-1">
-                        <Library className="h-4 w-4" />
-                        {themes.length} saved
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="outline" onClick={handleReset} disabled={busyReset}>
+                            {busyReset ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Resetting
+                                </>
+                            ) : (
+                                <>
+                                    <RotateCcw className="h-4 w-4" />
+                                    Load default seed
+                                </>
+                            )}
+                        </Button>
+                        <Badge variant="outline" className="gap-1">
+                            <Library className="h-4 w-4" />
+                            {themes.length} saved
+                        </Badge>
+                    </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {themesLoading ? (
