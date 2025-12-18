@@ -55,9 +55,14 @@ import {
     updateChildName,
 } from "@/lib/child-accounts";
 import { getDefaultSectionProgress, saveChildSectionProgress } from "@/lib/child-progress";
-import { SectionConfig, allSections } from "@/lib/game/config";
+import {
+    SECTION_ONE_ID,
+    SectionConfig,
+    buildSectionConfigFromRecords,
+} from "@/lib/game/config";
 import { SectionProgress } from "@/lib/game-types";
 import { ChildAccount } from "@/lib/types";
+import { useGardenContent } from "@/hooks/use-garden";
 
 const formatDate = (ts?: ChildAccount["updatedAt"]) =>
     ts ? new Date(ts.toDate()).toLocaleString() : "—";
@@ -276,7 +281,6 @@ export default function ChildrenPage() {
 
             <ProgressSheet
                 child={progressChild}
-                sections={allSections}
                 open={!!progressChild}
                 onOpenChange={(open) => {
                     if (!open) setProgressChild(null);
@@ -426,24 +430,37 @@ function ProgressSheet({
     child,
     open,
     onOpenChange,
-    sections,
 }: {
     child: ChildAccount | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    sections: SectionConfig[];
 }) {
+    const { phases, levels, loading: gardenLoading } = useGardenContent();
+
+    const sections = useMemo(() => {
+        if (phases.length === 0) return [];
+        return [buildSectionConfigFromRecords(SECTION_ONE_ID, "Garden Builders", phases, levels)];
+    }, [phases, levels]);
+
     const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);
     const { progress, loading, error } = useChildProgress(child?.childId ?? "", sectionIds);
     const [drafts, setDrafts] = useState<Record<string, SectionProgress>>({});
     const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
     const [busyId, setBusyId] = useState<string | null>(null);
+    const [initialized, setInitialized] = useState(false);
 
     useEffect(() => {
-        if (!open || !child) return;
-        setDrafts(progress);
-        setNotice(null);
-    }, [open, child, progress]);
+        if (!open) {
+            setInitialized(false);
+            return;
+        }
+        // Initialize drafts only once when data is ready to prevent overwriting edits
+        if (child && !loading && !initialized) {
+            setDrafts(progress);
+            setInitialized(true);
+            setNotice(null);
+        }
+    }, [open, child, loading, initialized, progress]);
 
     if (!child) return null;
 
@@ -464,13 +481,21 @@ function ProgressSheet({
         const payload = drafts[sectionId] ?? getDefaultSectionProgress(sectionId);
         setBusyId(sectionId);
         setNotice(null);
+
+        // Dynamically collect all phase completion flags
+        const phaseFlags: Record<string, boolean> = {};
+        Object.keys(payload).forEach((key) => {
+            if (key.startsWith("phase") && key.endsWith("Complete")) {
+                // @ts-expect-error - allowing dynamic access for flexible phase support
+                phaseFlags[key] = payload[key];
+            }
+        });
+
         try {
             await saveChildSectionProgress(child.childId, sectionId, {
                 currentLevel: payload.currentLevel,
                 currentPhase: payload.currentPhase,
-                phase1Complete: payload.phase1Complete,
-                phase2Complete: payload.phase2Complete,
-                phase3Complete: payload.phase3Complete,
+                ...phaseFlags,
             });
             setNotice({ tone: "info", text: "Progress updated." });
         } catch (err: unknown) {
@@ -500,6 +525,20 @@ function ProgressSheet({
                 </SheetHeader>
 
                 <div className="space-y-4 p-4">
+                    {gardenLoading && (
+                        <div className="flex items-center gap-2 text-sm text-foreground/70">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Loading game configuration…
+                        </div>
+                    )}
+
+                    {!gardenLoading && sections.length === 0 && (
+                        <div className="rounded-md border-4 border-destructive bg-secondary-background px-4 py-3 text-sm font-semibold text-destructive shadow-shadow">
+                            Error: No game content found. Please go to Garden/Levels configuration to
+                            create entries.
+                        </div>
+                    )}
+
                     {notice && (
                         <div
                             className={`rounded-md border-4 px-3 py-2 text-sm font-semibold shadow-shadow ${
