@@ -23,7 +23,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { sectionOne } from "@/lib/game/config";
+import { SECTION_ONE_ID, SectionConfig } from "@/lib/game/config";
 import { GameCue, SectionProgress } from "@/lib/game-types";
 
 type ChildSession = {
@@ -32,12 +32,15 @@ type ChildSession = {
     name?: string | null;
 };
 
-const SECTION_ID = sectionOne.id;
+const SECTION_ID = SECTION_ONE_ID;
 
 export function SectionOneGame() {
     const router = useRouter();
     const [session, setSession] = useState<ChildSession | null>(null);
     const [progress, setProgress] = useState<SectionProgress | null>(null);
+    const [config, setConfig] = useState<SectionConfig | null>(null);
+    const [configLoading, setConfigLoading] = useState(true);
+    const [configError, setConfigError] = useState<string | null>(null);
     const [cues, setCues] = useState<GameCue[]>([]);
     const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
     const [typedPrompt, setTypedPrompt] = useState("");
@@ -45,6 +48,31 @@ export function SectionOneGame() {
     const [feedback, setFeedback] = useState<string | null>(null);
     const [match, setMatch] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        const loadConfig = async () => {
+            setConfigLoading(true);
+            try {
+                const res = await fetch("/api/game/section-one/config", { credentials: "include" });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed to load config");
+                if (!active) return;
+                setConfig(data.config as SectionConfig);
+                setConfigError(null);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : "Failed to load config";
+                if (!active) return;
+                setConfigError(message);
+            } finally {
+                if (active) setConfigLoading(false);
+            }
+        };
+        loadConfig();
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const refreshState = useCallback(async () => {
         try {
@@ -98,52 +126,59 @@ export function SectionOneGame() {
     }, [router, refreshState]);
 
     const phaseConfig = useMemo(() => {
-        if (!progress) return null;
-        return sectionOne.phases[progress.currentPhase - 1];
-    }, [progress]);
+        if (!progress || !config?.phases.length) return null;
+        const phaseIndex = Math.min(Math.max(progress.currentPhase - 1, 0), config.phases.length - 1);
+        return config.phases[phaseIndex];
+    }, [config?.phases, progress]);
 
     const levelConfig = useMemo(() => {
         if (!progress || !phaseConfig) return null;
-        const baseLevel = phaseConfig.levels[progress.currentLevel - 1];
-        if (!baseLevel) return null;
+        const { levels } = phaseConfig;
+        if (!levels.length) return null;
+        const levelIndex = Math.min(Math.max(progress.currentLevel - 1, 0), levels.length - 1);
+        return levels[levelIndex];
+    }, [phaseConfig, progress]);
 
-        const bonusBlocksActive = cues.some((c) => c.id === "unlock-bonus-blocks" && c.active);
-        if (phaseConfig.mode === "blocks" && bonusBlocksActive && baseLevel.blocks) {
+    const bonusBlocksActive = cues.some((c) => c.id === "unlock-bonus-blocks" && c.active);
+
+    const mergedLevelConfig = useMemo(() => {
+        if (!levelConfig) return null;
+        if (phaseConfig?.mode === "blocks" && bonusBlocksActive && levelConfig.blocks) {
             return {
-                ...baseLevel,
-                blocks: [...baseLevel.blocks, ...(baseLevel.bonusBlocks ?? [])],
+                ...levelConfig,
+                blocks: [...levelConfig.blocks, ...(levelConfig.bonusBlocks ?? [])],
             };
         }
+        return levelConfig;
+    }, [bonusBlocksActive, levelConfig, phaseConfig?.mode]);
 
-        return baseLevel;
-    }, [cues, phaseConfig, progress]);
-
-    const startPhase3Active = cues.some((c) => c.id === "start-phase-3" && c.active);
+    const lockedCueId = phaseConfig?.lockedByCue;
+    const lockedByCue = lockedCueId ? !cues.some((c) => c.id === lockedCueId && c.active) : false;
     const phase3Locked =
-        progress?.phase1Complete === false ||
-        progress?.phase2Complete === false ||
-        !startPhase3Active;
+        progress?.currentPhase === 3
+            ? progress?.phase1Complete === false || progress?.phase2Complete === false || lockedByCue
+            : lockedByCue;
+    const isPhaseLocked = progress?.currentPhase === 3 ? phase3Locked : lockedByCue;
 
     const shuffledBlocks = useMemo(() => {
-        if (!levelConfig?.blocks) return [];
+        if (!mergedLevelConfig?.blocks) return [];
 
-        // Fisher–Yates shuffle to randomize block order each load while keeping it stable for the session.
-        const arr = [...levelConfig.blocks];
+        const arr = [...mergedLevelConfig.blocks];
         for (let i = arr.length - 1; i > 0; i -= 1) {
             const j = Math.floor(Math.random() * (i + 1));
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
         return arr;
-    }, [levelConfig?.blocks]);
+    }, [mergedLevelConfig?.blocks]);
 
     useEffect(() => {
         if (phaseConfig?.mode === "blocks" && shuffledBlocks.length) {
             setSelectedBlocks(shuffledBlocks.slice(0, 2));
         }
-    }, [phaseConfig?.mode, levelConfig?.id, shuffledBlocks]);
+    }, [phaseConfig?.mode, mergedLevelConfig?.id, shuffledBlocks]);
 
     const handleGenerate = async () => {
-        if (!phaseConfig || !levelConfig) return;
+        if (!phaseConfig || !mergedLevelConfig) return;
         const prompt =
             phaseConfig.mode === "blocks" ? selectedBlocks.join(" ").trim() : typedPrompt.trim();
 
@@ -184,7 +219,17 @@ export function SectionOneGame() {
         }
     };
 
-    if (!session || !progress || !phaseConfig || !levelConfig) {
+    if (configError) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="rounded-md border-4 border-foreground bg-secondary-background px-6 py-4 font-semibold shadow-shadow">
+                    {configError}
+                </div>
+            </div>
+        );
+    }
+
+    if (!session || !progress || !phaseConfig || !mergedLevelConfig || configLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-6 py-4 font-semibold shadow-shadow">
@@ -209,20 +254,19 @@ export function SectionOneGame() {
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <Sparkles className="h-4 w-4" />
-                        {sectionOne.title}: {phaseConfig.title} · Level {progress.currentLevel}
+                        {config?.title ?? "Garden Builders"}: {phaseConfig.title} · Level {progress.currentLevel}
                     </div>
                 </header>
 
                 <Card>
                     <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <CardTitle>{levelConfig.target}</CardTitle>
+                            <CardTitle>{mergedLevelConfig.target}</CardTitle>
                             <CardDescription>
-                                {phaseConfig.description ??
-                                    "Build a prompt to match the target image."}
+                                {phaseConfig.description ?? "Build a prompt to match the target image."}
                             </CardDescription>
                         </div>
-                        <BadgeChip>Phase {progress.currentPhase} of 3</BadgeChip>
+                        <BadgeChip>Phase {progress.currentPhase} of {config?.phases.length ?? 3}</BadgeChip>
                     </CardHeader>
                     <CardContent className="grid gap-6 lg:grid-cols-2">
                         <div className="space-y-4">
@@ -236,16 +280,11 @@ export function SectionOneGame() {
                                 <TextPromptInput
                                     value={typedPrompt}
                                     onChange={setTypedPrompt}
-                                    disabled={progress.currentPhase === 3 && phase3Locked}
+                                    disabled={isPhaseLocked}
                                 />
                             )}
-                            <div className="flex items-center gap-3">
-                                <Button
-                                    onClick={handleGenerate}
-                                    disabled={
-                                        loading || (progress.currentPhase === 3 && phase3Locked)
-                                    }
-                                >
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Button onClick={handleGenerate} disabled={loading || isPhaseLocked}>
                                     {loading ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -283,9 +322,7 @@ export function SectionOneGame() {
                         </div>
 
                         <div className="space-y-3">
-                            <Label className="text-sm uppercase text-foreground/60">
-                                Latest image
-                            </Label>
+                            <Label className="text-sm uppercase text-foreground/60">Latest image</Label>
                             <div className="aspect-square w-full overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
                                 {imageUrl ? (
                                     // eslint-disable-next-line @next/next/no-img-element
