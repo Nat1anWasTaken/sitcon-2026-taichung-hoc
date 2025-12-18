@@ -115,6 +115,14 @@ export default function GardenAdminPage() {
         setMessage(null);
         startBusyPhase(async () => {
             try {
+                const orderClash = phases.some(
+                    (p) => p.order === phaseForm.order && (!editingPhase || p.id !== editingPhase.id)
+                );
+                if (orderClash) {
+                    setMessage("Each phase needs a unique order number. Pick a different order.");
+                    return;
+                }
+
                 if (!editingPhase && phases.length >= MAX_PHASES) {
                     setMessage("Only three phases are supported in Section 1. Edit an existing phase instead.");
                     return;
@@ -294,6 +302,9 @@ export default function GardenAdminPage() {
                                 value={phaseForm.order}
                                 onChange={(e) => setPhaseForm({ ...phaseForm, order: Number(e.target.value) })}
                             />
+                            <p className="text-xs font-semibold text-foreground/70">
+                                Order must be unique; duplicates are rejected.
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <Label>Locked by cue (optional)</Label>
