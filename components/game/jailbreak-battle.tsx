@@ -287,6 +287,11 @@ export function JailbreakBattle() {
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         {isAttacker ? <Swords className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
                         {isAttacker ? "Attacker" : "Defender"} · Cracks {match.cracksCompleted}/3
+                        {match.totalThemes && match.totalThemes > 1 && (
+                            <span className="text-foreground/70">
+                                · Theme {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
+                            </span>
+                        )}
                     </div>
                 </header>
 
@@ -302,6 +307,11 @@ export function JailbreakBattle() {
                                 <Badge variant="outline">
                                     Scores · A: {match.attackerScore} · D: {match.defenderScore}
                                 </Badge>
+                                {match.totalThemes && match.totalThemes > 1 && (
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100">
+                                        Level {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
+                                    </Badge>
+                                )}
                             </div>
                             <TurnTimerPill
                                 secondsLeft={secondsLeft}

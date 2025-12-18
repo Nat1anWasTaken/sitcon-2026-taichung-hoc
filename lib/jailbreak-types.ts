@@ -39,6 +39,10 @@ export type JailbreakMatch = {
      * Server-assigned deadline for the active phase. Turn expires after this timestamp.
      */
     phaseExpiresAt?: Timestamp;
+    /**
+     * Array of theme IDs that have been completed (3 cracks) in this match.
+     */
+    completedThemeIds?: string[];
     createdAt: Timestamp;
     updatedAt: Timestamp;
 };
@@ -79,4 +83,12 @@ export type PublicMatchView = {
      * Deadline for the current phase in ISO string form; undefined when match is completed.
      */
     phaseExpiresAt?: string;
+    /**
+     * Number of themes completed in this match.
+     */
+    themesCompleted?: number;
+    /**
+     * Total number of themes available for this match.
+     */
+    totalThemes?: number;
 };

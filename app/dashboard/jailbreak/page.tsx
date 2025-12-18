@@ -685,6 +685,9 @@ function MatchCard({
                     <div className="text-xs font-semibold text-foreground/70">
                         A: {match.attackerChildId} · D: {match.defenderChildId} · Cracks{" "}
                         {match.cracksCompleted}/3
+                        {match.completedThemeIds && match.completedThemeIds.length > 0 && (
+                            <span> · Themes completed: {match.completedThemeIds.length}</span>
+                        )}
                     </div>
                 </div>
                 <Badge variant="outline" className="gap-1">

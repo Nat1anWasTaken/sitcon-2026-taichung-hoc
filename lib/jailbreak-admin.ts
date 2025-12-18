@@ -86,6 +86,7 @@ export async function createJailbreakMatch({
         attemptCount: 0,
         phaseExpiresAt: Timestamp.fromMillis(Date.now() + TURN_DURATION_MS),
         status: "active",
+        completedThemeIds: [],
         createdAt: now,
         updatedAt: now,
     };
