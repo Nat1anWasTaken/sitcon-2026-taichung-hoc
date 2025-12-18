@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import {
     AlertTriangle,
+    ArrowLeftRight,
     Clock3,
     Flame,
     LayoutDashboard,
@@ -43,6 +44,7 @@ import {
     createJailbreakMatch,
     createJailbreakTheme,
     deleteJailbreakTheme,
+    flipMatchRoles,
     resetJailbreakToSeed,
     resetMatchToTheme,
     updateJailbreakTheme,
@@ -501,6 +503,7 @@ export default function JailbreakAdminPage() {
                                 match={match}
                                 themes={themes}
                                 onSkip={resetMatchToTheme}
+                                onFlip={flipMatchRoles}
                             />
                         ))}
                     </div>
@@ -639,12 +642,15 @@ function MatchCard({
     match,
     themes,
     onSkip,
+    onFlip,
 }: {
     match: JailbreakMatch;
     themes: ReturnType<typeof useJailbreakThemes>["themes"];
     onSkip: (matchId: string, themeId: string) => Promise<void>;
+    onFlip: (matchId: string) => Promise<void>;
 }) {
     const [busy, setBusy] = useState(false);
+    const [flipping, setFlipping] = useState(false);
 
     const nextThemeId = useMemo(() => {
         const other = themes.find((t) => t.id !== match.themeId);
@@ -658,6 +664,15 @@ function MatchCard({
             await onSkip(match.id, nextThemeId);
         } finally {
             setBusy(false);
+        }
+    };
+
+    const handleFlip = async () => {
+        setFlipping(true);
+        try {
+            await onFlip(match.id);
+        } finally {
+            setFlipping(false);
         }
     };
 
@@ -688,16 +703,28 @@ function MatchCard({
                     Dev prompt preview: {match.developerPrompt || "—"}
                 </div>
                 <div className="flex items-center justify-between">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleSkip}
-                        disabled={busy || themes.length === 0}
-                        className="gap-2"
-                    >
-                        <RefreshCcw className="h-4 w-4" />
-                        Skip level
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleSkip}
+                            disabled={busy || themes.length === 0}
+                            className="gap-2"
+                        >
+                            <RefreshCcw className="h-4 w-4" />
+                            Skip level
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleFlip}
+                            disabled={flipping}
+                            className="gap-2"
+                        >
+                            <ArrowLeftRight className="h-4 w-4" />
+                            Flip roles
+                        </Button>
+                    </div>
                     {match.currentPhase === "COMPLETED" || match.status === "completed" ? (
                         <Badge variant="outline" className="bg-green-200 text-green-800">
                             Completed

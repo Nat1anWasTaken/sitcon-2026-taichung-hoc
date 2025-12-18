@@ -35,6 +35,10 @@ export type JailbreakMatch = {
     currentPhase: MatchPhase;
     attemptCount: number;
     status?: "active" | "completed" | "paused";
+    /**
+     * Server-assigned deadline for the active phase. Turn expires after this timestamp.
+     */
+    phaseExpiresAt?: Timestamp;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 };
@@ -71,4 +75,8 @@ export type PublicMatchView = {
         tokensUsed?: number;
         createdAt: string; // ISO string; serialized for client safety
     }>;
+    /**
+     * Deadline for the current phase in ISO string form; undefined when match is completed.
+     */
+    phaseExpiresAt?: string;
 };

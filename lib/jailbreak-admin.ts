@@ -1,6 +1,6 @@
 "use client";
 
-import { addDoc, deleteDoc, getDoc, getDocs, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
+import { Timestamp, addDoc, deleteDoc, getDoc, getDocs, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
 
 import {
     childDoc,
@@ -12,6 +12,8 @@ import {
 } from "./collections";
 import { sectionTwoSeedThemes } from "./game/config";
 import { JailbreakDifficulty, JailbreakMatch, JailbreakTheme } from "./jailbreak-types";
+
+const TURN_DURATION_MS = 60_000;
 
 type CreateThemeInput = {
     title: string;
@@ -82,6 +84,7 @@ export async function createJailbreakMatch({
         defenderScore: 0,
         currentPhase: "DEFENDER_PATCH",
         attemptCount: 0,
+        phaseExpiresAt: Timestamp.fromMillis(Date.now() + TURN_DURATION_MS),
         status: "active",
         createdAt: now,
         updatedAt: now,
@@ -109,6 +112,7 @@ export async function resetMatchToTheme(matchId: string, themeId: string) {
         attemptCount: 0,
         currentPhase: "DEFENDER_PATCH",
         status: "active",
+        phaseExpiresAt: Timestamp.fromMillis(Date.now() + TURN_DURATION_MS),
         updatedAt: serverTimestamp(),
     });
 
@@ -140,4 +144,23 @@ export async function resetJailbreakToSeed() {
     });
 
     await batch.commit();
+}
+
+export async function flipMatchRoles(matchId: string) {
+    const matchSnap = await getDoc(jailbreakMatchDoc(matchId));
+    if (!matchSnap.exists()) throw new Error("Match not found");
+
+    const match = matchSnap.data() as JailbreakMatch;
+
+    await updateDoc(jailbreakMatchDoc(matchId), {
+        attackerChildId: match.defenderChildId,
+        defenderChildId: match.attackerChildId,
+        attackerSeat: match.defenderSeat,
+        defenderSeat: match.attackerSeat,
+        attackerName: match.defenderName,
+        defenderName: match.attackerName,
+        attackerScore: match.defenderScore,
+        defenderScore: match.attackerScore,
+        updatedAt: serverTimestamp(),
+    });
 }

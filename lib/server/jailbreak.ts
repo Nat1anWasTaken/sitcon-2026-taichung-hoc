@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 import {
     generateJailbreakReply,
@@ -17,6 +17,11 @@ function assertAdminDb() {
 
 const START_SECTION_TWO_CUE = "start-section-2";
 const SECTION_ONE_ID = "section-1";
+const TURN_DURATION_MS = 60_000;
+
+function buildTurnDeadline() {
+    return Timestamp.fromMillis(Date.now() + TURN_DURATION_MS);
+}
 
 export async function requireSectionTwoCue() {
     const cue = await getCue(START_SECTION_TWO_CUE);
@@ -35,12 +40,66 @@ export async function requireSectionOneComplete(childId: string) {
 
 const MATCH_COLLECTION = "jailbreakMatches";
 
-async function getMatchById(matchId: string): Promise<JailbreakMatch | null> {
+async function fetchMatchDoc(matchId: string): Promise<JailbreakMatch | null> {
     const db = assertAdminDb();
     const snap = await db.collection(MATCH_COLLECTION).doc(matchId).get();
     if (!snap.exists) return null;
     const rest = snap.data() as JailbreakMatch;
     return { ...rest, id: snap.id };
+}
+
+async function resolveExpiredPhase(match: JailbreakMatch): Promise<JailbreakMatch> {
+    if (match.currentPhase === "COMPLETED") {
+        return match;
+    }
+
+    if (!match.phaseExpiresAt) {
+        const db = assertAdminDb();
+        await db.collection(MATCH_COLLECTION).doc(match.id).update({
+            phaseExpiresAt: buildTurnDeadline(),
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+        const refreshed = await fetchMatchDoc(match.id);
+        return refreshed ?? match;
+    }
+
+    const now = Date.now();
+    if (match.phaseExpiresAt.toMillis() > now) return match;
+
+    const db = assertAdminDb();
+    let update: Record<string, unknown> = {
+        updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    if (match.currentPhase === "ATTACK_PHASE") {
+        const nextAttempt = match.attemptCount + 1;
+        const attemptCount = nextAttempt >= 3 ? 0 : nextAttempt;
+        const currentPhase: MatchPhase = nextAttempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+        update = {
+            ...update,
+            attemptCount,
+            defenderScore: match.defenderScore + 50,
+            currentPhase,
+            phaseExpiresAt: Timestamp.fromMillis(now + TURN_DURATION_MS),
+        };
+    } else if (match.currentPhase === "DEFENDER_PATCH") {
+        update = {
+            ...update,
+            currentPhase: "ATTACK_PHASE",
+            attemptCount: 0,
+            phaseExpiresAt: Timestamp.fromMillis(now + TURN_DURATION_MS),
+        };
+    }
+
+    await db.collection(MATCH_COLLECTION).doc(match.id).update(update);
+    const refreshed = await fetchMatchDoc(match.id);
+    return refreshed ?? match;
+}
+
+async function getMatchById(matchId: string): Promise<JailbreakMatch | null> {
+    const base = await fetchMatchDoc(matchId);
+    if (!base) return null;
+    return resolveExpiredPhase(base);
 }
 
 async function getMatchForChild(childId: string): Promise<JailbreakMatch | null> {
@@ -54,7 +113,7 @@ async function getMatchForChild(childId: string): Promise<JailbreakMatch | null>
     if (!attackerSnap.empty) {
         const doc = attackerSnap.docs[0];
         const rest = doc.data() as JailbreakMatch;
-        return { ...rest, id: doc.id };
+        return resolveExpiredPhase({ ...rest, id: doc.id });
     }
 
     const defenderSnap = await db
@@ -66,7 +125,7 @@ async function getMatchForChild(childId: string): Promise<JailbreakMatch | null>
     if (!defenderSnap.empty) {
         const doc = defenderSnap.docs[0];
         const rest = doc.data() as JailbreakMatch;
-        return { ...rest, id: doc.id };
+        return resolveExpiredPhase({ ...rest, id: doc.id });
     }
     return null;
 }
@@ -104,6 +163,7 @@ function sanitizeMatch(
         status: match.status,
         developerPrompt: role === "defender" ? match.developerPrompt : undefined,
         breachCriteria: role === "defender" ? match.breachCriteria : undefined,
+        phaseExpiresAt: match.phaseExpiresAt?.toDate().toISOString(),
         logs: turns.map((t) => ({
             id: t.id,
             attackerPrompt: t.attackerPrompt,
@@ -128,6 +188,57 @@ function computeAttackerReward(attempt: number, tokensUsed?: number) {
     const attemptPenalty = attempt * 50;
     const tokenPenalty = Math.floor((tokensUsed ?? 0) / 5);
     return Math.max(100, base - attemptPenalty - tokenPenalty);
+}
+
+function buildMatchUpdateWithRoleSwap(params: {
+    match: JailbreakMatch;
+    shouldSwapRoles: boolean;
+    cracksCompleted: number;
+    currentPhase: MatchPhase;
+    status: JailbreakMatch["status"];
+    attackerScore: number;
+    defenderScore: number;
+    attemptCount: number;
+    lastResponse: string;
+}): Record<string, unknown> {
+    const {
+        match,
+        shouldSwapRoles,
+        cracksCompleted,
+        currentPhase,
+        status,
+        attackerScore,
+        defenderScore,
+        attemptCount,
+        lastResponse,
+    } = params;
+
+    const updatePayload: Record<string, unknown> = {
+        cracksCompleted,
+        currentPhase,
+        status,
+        attemptCount,
+        phaseExpiresAt: currentPhase === "COMPLETED" ? FieldValue.delete() : buildTurnDeadline(),
+        updatedAt: FieldValue.serverTimestamp(),
+        lastResponse,
+    };
+
+    if (shouldSwapRoles) {
+        // Swap attacker and defender roles
+        updatePayload.attackerChildId = match.defenderChildId;
+        updatePayload.defenderChildId = match.attackerChildId;
+        updatePayload.attackerSeat = match.defenderSeat;
+        updatePayload.defenderSeat = match.attackerSeat;
+        updatePayload.attackerName = match.defenderName;
+        updatePayload.defenderName = match.attackerName;
+        updatePayload.attackerScore = defenderScore;
+        updatePayload.defenderScore = attackerScore;
+    } else {
+        updatePayload.attackerScore = attackerScore;
+        updatePayload.defenderScore = defenderScore;
+    }
+
+    return updatePayload;
 }
 
 export async function recordAttackAttempt(params: {
@@ -177,26 +288,33 @@ export async function recordAttackAttempt(params: {
     let defenderScore = match.defenderScore;
     const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
 
+    let shouldSwapRoles = false;
+
     if (verdict.breach) {
         attackerScore += computeAttackerReward(attempt, tokensUsed);
         if (cracksCompleted >= 3) {
             currentPhase = "COMPLETED";
             status = "completed";
+        } else {
+            shouldSwapRoles = true;
         }
     } else {
-        defenderScore += 50; // resilience points
+        defenderScore += 50;
     }
 
-    await db.collection(MATCH_COLLECTION).doc(match.id).update({
+    const updatePayload = buildMatchUpdateWithRoleSwap({
+        match,
+        shouldSwapRoles,
         cracksCompleted,
         currentPhase,
         status,
         attackerScore,
         defenderScore,
         attemptCount,
-        updatedAt: FieldValue.serverTimestamp(),
         lastResponse: text,
     });
+
+    await db.collection(MATCH_COLLECTION).doc(match.id).update(updatePayload);
 
     const updatedMatch = await getMatchById(match.id);
     const turns = await listTurns(match.id);
@@ -272,26 +390,33 @@ export async function* streamAttackAttempt(params: {
     let defenderScore = match.defenderScore;
     const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
 
+    let shouldSwapRoles = false;
+
     if (verdict.breach) {
         attackerScore += computeAttackerReward(attempt, result.tokensUsed);
         if (cracksCompleted >= 3) {
             currentPhase = "COMPLETED";
             status = "completed";
+        } else {
+            shouldSwapRoles = true;
         }
     } else {
         defenderScore += 50;
     }
 
-    await db.collection(MATCH_COLLECTION).doc(match.id).update({
+    const updatePayload = buildMatchUpdateWithRoleSwap({
+        match,
+        shouldSwapRoles,
         cracksCompleted,
         currentPhase,
         status,
         attackerScore,
         defenderScore,
         attemptCount,
-        updatedAt: FieldValue.serverTimestamp(),
         lastResponse: result.fullText,
     });
+
+    await db.collection(MATCH_COLLECTION).doc(match.id).update(updatePayload);
 
     const updatedMatch = await getMatchById(match.id);
     const turns = await listTurns(match.id);
@@ -322,6 +447,7 @@ export async function applyDefenderPatch(params: {
         developerPrompt: params.developerPrompt,
         currentPhase: "ATTACK_PHASE",
         attemptCount: 0,
+        phaseExpiresAt: buildTurnDeadline(),
         updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -329,4 +455,22 @@ export async function applyDefenderPatch(params: {
     const turns = await listTurns(match.id);
     if (!updatedMatch) throw new Error("Failed to load updated match");
     return sanitizeMatch(updatedMatch, turns, params.childId);
+}
+
+export async function flipMatchRoles(matchId: string): Promise<void> {
+    const db = assertAdminDb();
+    const match = await getMatchById(matchId);
+    if (!match) throw new Error("Match not found");
+
+    await db.collection(MATCH_COLLECTION).doc(matchId).update({
+        attackerChildId: match.defenderChildId,
+        defenderChildId: match.attackerChildId,
+        attackerSeat: match.defenderSeat,
+        defenderSeat: match.attackerSeat,
+        attackerName: match.defenderName,
+        defenderName: match.attackerName,
+        attackerScore: match.defenderScore,
+        defenderScore: match.attackerScore,
+        updatedAt: FieldValue.serverTimestamp(),
+    });
 }

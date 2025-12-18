@@ -31,6 +31,8 @@ type FetchState<T> = {
     error?: string;
 };
 
+const TURN_LIMIT_SECONDS = 60;
+
 export function JailbreakBattle() {
     const router = useRouter();
     const [session, setSession] = useState<ChildSession | null>(null);
@@ -42,6 +44,7 @@ export function JailbreakBattle() {
     const [developerDraft, setDeveloperDraft] = useState("");
     const [busy, setBusy] = useState(false);
     const [streamingResponse, setStreamingResponse] = useState("");
+    const [now, setNow] = useState(() => Date.now());
 
     const fetchMatch = async (showSpinner = false) => {
         // Only flip the full-screen loading state on the first load or when explicitly asked.
@@ -86,16 +89,16 @@ export function JailbreakBattle() {
     }, [router]);
 
     useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+
+    useEffect(() => {
         if (!session) return;
         fetchMatch(true);
         const id = setInterval(() => fetchMatch(false), 2000);
         return () => clearInterval(id);
     }, [session]);
-
-    const role = matchState.data?.role ?? "attacker";
-    const isAttacker = role === "attacker";
-    const canAttack = matchState.data?.currentPhase === "ATTACK_PHASE";
-    const canPatch = matchState.data?.currentPhase === "DEFENDER_PATCH" && role === "defender";
 
     const handleAttack = async () => {
         if (!attackInput.trim() || !matchState.data) return;
@@ -248,11 +251,22 @@ export function JailbreakBattle() {
     }
 
     const match = matchState.data;
+    const deadlineMs = match?.phaseExpiresAt ? new Date(match.phaseExpiresAt).getTime() : null;
+    const secondsLeft =
+        deadlineMs !== null ? Math.max(0, Math.floor((deadlineMs - now) / 1000)) : null;
+    const turnExpired = deadlineMs !== null && deadlineMs <= now;
+    const formattedSecondsLeft = secondsLeft !== null ? formatSeconds(secondsLeft) : null;
+
+    const role = matchState.data?.role ?? "attacker";
+    const isAttacker = role === "attacker";
+    const canPatchPhase = matchState.data?.currentPhase === "DEFENDER_PATCH" && role === "defender";
+    const canAttack = matchState.data?.currentPhase === "ATTACK_PHASE" && !turnExpired;
+    const canPatch = canPatchPhase && !turnExpired;
 
     return (
         <div className="min-h-full bg-background px-4 py-8">
             <div className="mx-auto flex min-h-full max-w-6xl flex-col gap-6">
-                <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex flex-wrap items-center gap-3">
                         <Button
                             asChild
@@ -277,16 +291,23 @@ export function JailbreakBattle() {
                 </header>
 
                 <Card>
-                    <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <CardHeader className="space-y-3">
                         <div>
                             <CardTitle>{match.themeTitle}</CardTitle>
                             <CardDescription>{match.themeDescription}</CardDescription>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <StatusPill phase={match.currentPhase} />
-                            <Badge variant="outline">
-                                Scores · A: {match.attackerScore} · D: {match.defenderScore}
-                            </Badge>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="flex flex-wrap items-start gap-2">
+                                <StatusPill phase={match.currentPhase} />
+                                <Badge variant="outline">
+                                    Scores · A: {match.attackerScore} · D: {match.defenderScore}
+                                </Badge>
+                            </div>
+                            <TurnTimerPill
+                                secondsLeft={secondsLeft}
+                                turnExpired={turnExpired}
+                                phase={match.currentPhase}
+                            />
                         </div>
                     </CardHeader>
                     <CardContent className="grid gap-6 lg:grid-cols-2">
@@ -299,6 +320,8 @@ export function JailbreakBattle() {
                                 busy={busy}
                                 phase={match.currentPhase}
                                 cracks={match.cracksCompleted}
+                                secondsLeft={secondsLeft}
+                                turnExpired={turnExpired}
                             />
                         ) : (
                             <DefenderPanel
@@ -309,6 +332,8 @@ export function JailbreakBattle() {
                                 busy={busy}
                                 phase={match.currentPhase}
                                 breachCriteria={match.breachCriteria}
+                                secondsLeft={secondsLeft}
+                                turnExpired={turnExpired}
                             />
                         )}
                         <div className="space-y-3">
@@ -354,6 +379,46 @@ function StatusPill({ phase }: { phase: PublicMatchView["currentPhase"] }) {
     );
 }
 
+function TurnTimerPill({
+    secondsLeft,
+    turnExpired,
+    phase,
+}: {
+    secondsLeft: number | null;
+    turnExpired: boolean;
+    phase: PublicMatchView["currentPhase"];
+}) {
+    if (phase === "COMPLETED") return null;
+
+    const label =
+        secondsLeft !== null ? `${formatSeconds(secondsLeft)} left` : "Syncing timer…";
+    const palette = turnExpired
+        ? "border-destructive text-destructive"
+        : "border-main text-foreground";
+
+    return (
+        <div
+            className={`inline-flex items-center gap-3 rounded-md border-4 bg-secondary-background px-3 py-2 text-sm font-bold shadow-shadow ${palette}`}
+        >
+            <div
+                className={`flex h-8 w-8 items-center justify-center rounded-sm border-2 border-foreground bg-background ${
+                    turnExpired ? "text-destructive" : "text-main"
+                }`}
+                aria-hidden
+            >
+                <Timer className="h-4 w-4" />
+            </div>
+            <div className="leading-tight">
+                <div className="uppercase text-[10px] tracking-wide text-foreground/70">Turn clock</div>
+                <div>{turnExpired ? "Time's up" : label}</div>
+            </div>
+            <div className="rounded-sm bg-main px-2 text-[10px] font-black uppercase tracking-wide text-main-foreground">
+                1:00
+            </div>
+        </div>
+    );
+}
+
 function AttackerPanel({
     canAttack,
     attackInput,
@@ -362,6 +427,8 @@ function AttackerPanel({
     busy,
     phase,
     cracks,
+    secondsLeft,
+    turnExpired,
 }: {
     canAttack: boolean;
     attackInput: string;
@@ -370,6 +437,8 @@ function AttackerPanel({
     busy: boolean;
     phase: PublicMatchView["currentPhase"];
     cracks: number;
+    secondsLeft: number | null;
+    turnExpired: boolean;
 }) {
     return (
         <div className="space-y-4">
@@ -377,6 +446,14 @@ function AttackerPanel({
                 {phase === "DEFENDER_PATCH"
                     ? "Defender is fixing their wall. Wait for the next turn."
                     : "Send a clever prompt to break through the wall."}
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-foreground/70">
+                <Timer className="h-3 w-3" />
+                {phase === "COMPLETED"
+                    ? "Level finished"
+                    : turnExpired
+                    ? "Time's up—hang tight for the next phase."
+                    : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left this turn`}
             </div>
             <div className="space-y-2">
                 <Label>Terminal</Label>
@@ -388,7 +465,10 @@ function AttackerPanel({
                 />
             </div>
             <div className="flex items-center gap-3">
-                <Button onClick={onAttack} disabled={!canAttack || busy || !attackInput.trim()}>
+                <Button
+                    onClick={onAttack}
+                    disabled={!canAttack || busy || !attackInput.trim() || turnExpired}
+                >
                     {busy ? "Working…" : "Launch attack"}
                 </Button>
                 <CrackMeter cracks={cracks} />
@@ -396,6 +476,11 @@ function AttackerPanel({
             {!canAttack && phase !== "COMPLETED" && (
                 <div className="text-xs font-semibold text-foreground/70">
                     Wait for the defender to patch before sending the next attack.
+                </div>
+            )}
+            {turnExpired && phase !== "COMPLETED" && (
+                <div className="rounded-md border-4 border-destructive bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive shadow-shadow">
+                    Turn timer hit 0:00. The game will flip to the next phase automatically.
                 </div>
             )}
         </div>
@@ -410,6 +495,8 @@ function DefenderPanel({
     busy,
     phase,
     breachCriteria,
+    secondsLeft,
+    turnExpired,
 }: {
     developerPrompt: string;
     setDeveloperPrompt: (v: string) => void;
@@ -418,6 +505,8 @@ function DefenderPanel({
     busy: boolean;
     phase: PublicMatchView["currentPhase"];
     breachCriteria?: string;
+    secondsLeft: number | null;
+    turnExpired: boolean;
 }) {
     const helper =
         phase === "DEFENDER_PATCH"
@@ -439,21 +528,37 @@ function DefenderPanel({
                     </div>
                 </div>
             )}
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-foreground/70">
+                <Timer className="h-3 w-3" />
+                {phase === "COMPLETED"
+                    ? "Level finished"
+                    : turnExpired
+                    ? "Time's up—attacker resumes once the phase flips."
+                    : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left to patch`}
+            </div>
             <div className="space-y-2">
                 <Label>Developer Prompt</Label>
                 <Textarea
                     value={developerPrompt}
                     onChange={(e) => setDeveloperPrompt(e.target.value)}
-                    disabled={!canPatch || busy || phase === "COMPLETED"}
+                    disabled={!canPatch || busy || phase === "COMPLETED" || turnExpired}
                     placeholder="Explain how the AI should behave to keep the secret safe."
                 />
             </div>
-            <Button onClick={onSave} disabled={!canPatch || busy || !developerPrompt.trim()}>
+            <Button
+                onClick={onSave}
+                disabled={!canPatch || busy || !developerPrompt.trim() || turnExpired}
+            >
                 {busy ? "Saving…" : "Save & resume attacks"}
             </Button>
             {!canPatch && phase !== "COMPLETED" && (
                 <div className="text-xs font-semibold text-foreground/70">
                     You can patch only after the attacker cracks a layer.
+                </div>
+            )}
+            {turnExpired && phase !== "COMPLETED" && (
+                <div className="rounded-md border-4 border-destructive bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive shadow-shadow">
+                    You ran out of time. The turn will hand back to the attacker automatically.
                 </div>
             )}
         </div>
@@ -566,4 +671,11 @@ function LogList({
             ))}
         </div>
     );
+}
+
+function formatSeconds(totalSeconds: number) {
+    const clamped = Math.max(0, totalSeconds);
+    const minutes = Math.floor(clamped / 60);
+    const seconds = clamped % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
