@@ -1,7 +1,9 @@
 import { Timestamp } from "firebase-admin/firestore";
 
+import { JailbreakMatch } from "../jailbreak-types";
 import { JailbreakScoreboardRow } from "../jailbreak-scoreboard-types";
 import { adminFirestore } from "../firebase-admin";
+import { ChildAccount } from "@/lib/types";
 
 function assertDb() {
     if (!adminFirestore) throw new Error("Admin Firestore not initialized");
@@ -19,12 +21,12 @@ export async function buildJailbreakScoreboard(): Promise<{
         db.collection("children").get(),
     ]);
 
-    const childMap = new Map(childrenSnap.docs.map((d) => [d.id, d.data() as any]));
+    const childMap = new Map(childrenSnap.docs.map((d) => [d.id, d.data() as ChildAccount]));
 
     const rows: JailbreakScoreboardRow[] = matchesSnap.docs.map((doc) => {
-        const data = doc.data() as any;
-        const attacker = childMap.get(data.attackerChildId) as any;
-        const defender = childMap.get(data.defenderChildId) as any;
+        const data = doc.data() as JailbreakMatch;
+        const attacker = childMap.get(data.attackerChildId);
+        const defender = childMap.get(data.defenderChildId);
         const updatedAt = (data.updatedAt as Timestamp | undefined)?.toDate?.()?.toISOString?.();
 
         return {

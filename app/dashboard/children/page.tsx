@@ -55,7 +55,7 @@ import {
     updateChildName,
 } from "@/lib/child-accounts";
 import { getDefaultSectionProgress, saveChildSectionProgress } from "@/lib/child-progress";
-import { SECTION_ONE_ID, SectionConfig, buildSectionConfigFromRecords } from "@/lib/game/config";
+import { SECTION_ONE_ID, buildSectionConfigFromRecords } from "@/lib/game/config";
 import { SectionProgress } from "@/lib/game-types";
 import { ChildAccount } from "@/lib/types";
 import { useGardenContent } from "@/hooks/use-garden";

@@ -37,7 +37,7 @@ type ChatOptions = {
         | { type: "json_object" }
         | {
               type: "json_schema";
-              json_schema: { name: string; schema: Record<string, any>; strict?: boolean };
+              json_schema: { name: string; schema: Record<string, unknown>; strict?: boolean };
           };
 };
 
@@ -360,7 +360,7 @@ export async function* streamJailbreakReply({
                         if (parsed.usage?.total_tokens) {
                             tokensUsed = parsed.usage.total_tokens;
                         }
-                    } catch (e) {
+                    } catch {
                         // Skip invalid JSON
                     }
                 }

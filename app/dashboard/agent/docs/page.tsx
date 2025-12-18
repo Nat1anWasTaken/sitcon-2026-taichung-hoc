@@ -13,7 +13,7 @@ import { Timestamp } from "firebase-admin/firestore";
 async function fetchDocs() {
     if (!adminFirestore) throw new Error("Missing admin credentials");
     const snap = await adminFirestore.collection("agentKnowledgeDocs").orderBy("entityKey", "asc").get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentKnowledgeDoc) }));
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgentKnowledgeDoc, "id">) }));
 }
 
 async function createDoc(formData: FormData) {

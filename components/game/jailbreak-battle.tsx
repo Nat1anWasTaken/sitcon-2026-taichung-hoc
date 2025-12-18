@@ -255,7 +255,6 @@ export function JailbreakBattle() {
     const secondsLeft =
         deadlineMs !== null ? Math.max(0, Math.floor((deadlineMs - now) / 1000)) : null;
     const turnExpired = deadlineMs !== null && deadlineMs <= now;
-    const formattedSecondsLeft = secondsLeft !== null ? formatSeconds(secondsLeft) : null;
 
     const role = matchState.data?.role ?? "attacker";
     const isAttacker = role === "attacker";

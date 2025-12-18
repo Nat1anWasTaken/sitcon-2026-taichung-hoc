@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Query, Timestamp } from "firebase-admin/firestore";
 
 import { adminFirestore } from "../firebase-admin";
 import {
@@ -16,12 +16,12 @@ function assertAdminDb() {
 
 export async function listAgentStages(options?: { activeOnly?: boolean }): Promise<AgentStage[]> {
     const db = assertAdminDb();
-    let ref = db.collection("agentStages");
+    let ref: Query = db.collection("agentStages");
     if (options?.activeOnly) {
         ref = ref.where("isActive", "==", true);
     }
     const snap = await ref.orderBy("order", "asc").get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentStage) }));
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgentStage, "id">) }));
 }
 
 export async function listAgentLevelsByStage(
@@ -34,14 +34,14 @@ export async function listAgentLevelsByStage(
         ref = ref.where("isActive", "==", true);
     }
     const snap = await ref.orderBy("order", "asc").get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentLevel) }));
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgentLevel, "id">) }));
 }
 
 export async function getAgentLevel(levelId: string): Promise<AgentLevel | null> {
     const db = assertAdminDb();
     const snap = await db.collection("agentLevels").doc(levelId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as AgentLevel) };
+    return { id: snap.id, ...(snap.data() as Omit<AgentLevel, "id">) };
 }
 
 export async function getActiveLevel(levelId: string): Promise<AgentLevel> {
@@ -57,14 +57,14 @@ export async function listKnowledgeDocsForEntity(entityKey: string): Promise<Age
         .where("entityKey", "==", entityKey)
         .orderBy("publishedAt", "desc")
         .get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentKnowledgeDoc) }));
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgentKnowledgeDoc, "id">) }));
 }
 
 export async function getKnowledgeDoc(docId: string): Promise<AgentKnowledgeDoc | null> {
     const db = assertAdminDb();
     const snap = await db.collection("agentKnowledgeDocs").doc(docId).get();
     if (!snap.exists) return null;
-    return { id: snap.id, ...(snap.data() as AgentKnowledgeDoc) };
+    return { id: snap.id, ...(snap.data() as Omit<AgentKnowledgeDoc, "id">) };
 }
 
 export async function recordAgentRun(run: Omit<AgentRun, "id">, runId?: string): Promise<string> {

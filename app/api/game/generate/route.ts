@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     let phase1Complete = progress.phase1Complete ?? false;
     let phase2Complete = progress.phase2Complete ?? false;
     let phase3Complete = progress.phase3Complete ?? false;
-    let sectionComplete = progress.sectionComplete ?? false;
+    let sectionComplete: boolean = progress.sectionComplete ?? false;
 
     if (evaluation.match) {
         const phaseLevels = activePhase.levels.length;

@@ -17,6 +17,7 @@ import {
     gardenPhasesCollection,
 } from "./collections";
 import { sectionOneSeedLevels, sectionOneSeedPhases } from "./game/config";
+import { GardenLevel, GardenPhase } from "@/lib/garden-types";
 
 type PhaseInput = {
     title: string;
@@ -33,7 +34,7 @@ export async function createGardenPhase(input: PhaseInput) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
-    await addDoc(gardenPhasesCollection, payload);
+    await addDoc(gardenPhasesCollection, payload as unknown as GardenPhase);
 }
 
 export async function updateGardenPhase(phaseId: string, input: PhaseInput) {
@@ -72,7 +73,7 @@ export async function createGardenLevel(input: LevelInput) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
-    await addDoc(gardenLevelsCollection, payload);
+    await addDoc(gardenLevelsCollection, payload as unknown as GardenLevel);
 }
 
 export async function updateGardenLevel(levelId: string, input: LevelInput) {

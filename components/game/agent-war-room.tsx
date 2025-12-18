@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, ShieldAlert, Sparkles, Telescope, Workflow } from "lucide-react";
+import { Loader2, Sparkles, Telescope, Workflow } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,9 @@ export function AgentWarRoom() {
             });
             const json = (await res.json()) as RunResponse & { waitingCue?: string };
             if (!res.ok) {
-                setError(json.message || json.error || "Run failed");
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const errJson = json as any;
+                setError(errJson.message || errJson.error || "Run failed");
                 return;
             }
             startStream(json.events ?? []);

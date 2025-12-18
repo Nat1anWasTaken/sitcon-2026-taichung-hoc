@@ -329,7 +329,7 @@ export async function recordAttackAttempt(params: {
     let status: JailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
-    let attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
+    const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
 
     let shouldSwapRoles = false;
     let completedThemeIds = match.completedThemeIds ?? [];
@@ -467,7 +467,7 @@ export async function* streamAttackAttempt(params: {
     let status: JailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
-    let attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
+    const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
 
     let shouldSwapRoles = false;
     let completedThemeIds = match.completedThemeIds ?? [];
