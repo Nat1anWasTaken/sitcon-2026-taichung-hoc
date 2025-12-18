@@ -3,66 +3,66 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    // Treat any signed-in Firebase Auth user as an admin-equivalent actor.
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
     match /admins/{uid} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /children/{childId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /childProgress/{childId}/sections/{sectionId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /gameCues/{cueId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /gardenPhases/{phaseId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /gardenLevels/{levelId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /jailbreakThemes/{themeId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /jailbreakMatches/{matchId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /jailbreakMatches/{matchId}/turns/{turnId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     // Agent training/game collections (admin-only)
     match /agentStages/{stageId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /agentLevels/{levelId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /agentKnowledgeDocs/{docId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /agentRuns/{runId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /childAgentProgress/{childId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     match /{document=**} {
