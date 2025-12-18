@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { evaluateImageMatch, generateGameImage } from "@/lib/ai";
-import { getSectionConfig } from "@/lib/game/config";
+import { SECTION_ONE_ID } from "@/lib/game/config";
 import { PhaseId } from "@/lib/game-types";
-import { getSectionProgress, saveSectionProgress } from "@/lib/server/progress";
 import { getCue } from "@/lib/server/cues";
+import { getSectionProgress, saveSectionProgress } from "@/lib/server/progress";
+import { fetchSectionOneConfig } from "@/lib/server/section-one";
 import { requireChildSession } from "@/lib/server/session";
 
 export async function POST(req: NextRequest) {
@@ -14,18 +15,27 @@ export async function POST(req: NextRequest) {
     } catch {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { prompt, sectionId = "section-1" } = await req.json();
+    const { prompt, sectionId = SECTION_ONE_ID } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
         return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    const config = getSectionConfig(sectionId);
+    if (sectionId !== SECTION_ONE_ID) {
+        return NextResponse.json({ error: "Unknown section" }, { status: 400 });
+    }
+
+    const { config } = await fetchSectionOneConfig();
     const progress = await getSectionProgress(session.childId, sectionId);
 
-    const activePhase = config.phases[progress.currentPhase - 1];
-    const activeLevel = activePhase.levels[progress.currentLevel - 1];
-    const target = activeLevel?.target ?? progress.lastTarget ?? "the target";
+    const activePhase = config.phases[Math.min(progress.currentPhase - 1, config.phases.length - 1)];
+    const activeLevel = activePhase?.levels[Math.min(progress.currentLevel - 1, (activePhase?.levels.length ?? 1) - 1)];
+
+    if (!activePhase || !activeLevel) {
+        return NextResponse.json({ error: "No level configured" }, { status: 400 });
+    }
+
+    const target = activeLevel.target || progress.lastTarget || "the target";
 
     const { image, dataUrl } = await generateGameImage(prompt);
     const evaluation = await evaluateImageMatch(image, target);

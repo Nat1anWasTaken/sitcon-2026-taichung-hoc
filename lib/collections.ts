@@ -3,16 +3,18 @@ import {
     DocumentReference,
     FirestoreDataConverter,
     collection,
+    collectionGroup,
     doc,
+    orderBy,
     query,
     where,
-    collectionGroup,
 } from "firebase/firestore";
 
 import { firestoreDb } from "./firebase";
 import { GameCue, SectionProgress } from "./game-types";
-import { AdminProfile, ChildAccount } from "./types";
+import { GardenLevel, GardenPhase } from "./garden-types";
 import { JailbreakMatch, JailbreakTheme, JailbreakTurn } from "./jailbreak-types";
+import { AdminProfile, ChildAccount } from "./types";
 
 const adminConverter: FirestoreDataConverter<AdminProfile> = {
     toFirestore: (data) => data,
@@ -33,6 +35,22 @@ const cueConverter: FirestoreDataConverter<GameCue> = {
     toFirestore: (data) => data,
     fromFirestore: (snap) => {
         const rest = snap.data() as GameCue;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const gardenPhaseConverter: FirestoreDataConverter<GardenPhase> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as GardenPhase;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const gardenLevelConverter: FirestoreDataConverter<GardenLevel> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as GardenLevel;
         return { ...rest, id: snap.id };
     },
 };
@@ -92,6 +110,23 @@ export const gameCuesCollection = collection(firestoreDb, "gameCues").withConver
 
 export const gameCueDoc = (cueId: string) =>
     doc(gameCuesCollection, cueId) as DocumentReference<GameCue>;
+
+export const gardenPhasesCollection = collection(firestoreDb, "gardenPhases").withConverter(
+    gardenPhaseConverter
+) as CollectionReference<GardenPhase>;
+
+export const gardenPhaseDoc = (phaseId: string) =>
+    doc(gardenPhasesCollection, phaseId) as DocumentReference<GardenPhase>;
+
+export const gardenLevelsCollection = collection(firestoreDb, "gardenLevels").withConverter(
+    gardenLevelConverter
+) as CollectionReference<GardenLevel>;
+
+export const gardenLevelDoc = (levelId: string) =>
+    doc(gardenLevelsCollection, levelId) as DocumentReference<GardenLevel>;
+
+export const gardenLevelsByPhase = (phaseId: string) =>
+    query(gardenLevelsCollection, where("phaseId", "==", phaseId), orderBy("levelNumber", "asc"));
 
 export const jailbreakThemesCollection = collection(firestoreDb, "jailbreakThemes").withConverter(
     jailbreakThemeConverter
