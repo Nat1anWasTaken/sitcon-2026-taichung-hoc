@@ -14,6 +14,7 @@ import { firestoreDb } from "./firebase";
 import { GameCue, SectionProgress } from "./game-types";
 import { GardenLevel, GardenPhase } from "./garden-types";
 import { JailbreakMatch, JailbreakTheme, JailbreakTurn } from "./jailbreak-types";
+import { AgentKnowledgeDoc, AgentLevel, AgentRun, AgentStage } from "./agent-types";
 import { AdminProfile, ChildAccount } from "./types";
 
 const adminConverter: FirestoreDataConverter<AdminProfile> = {
@@ -75,6 +76,38 @@ const jailbreakTurnConverter: FirestoreDataConverter<JailbreakTurn> = {
     toFirestore: (data) => data,
     fromFirestore: (snap) => {
         const rest = snap.data() as JailbreakTurn;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const agentStageConverter: FirestoreDataConverter<AgentStage> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as AgentStage;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const agentLevelConverter: FirestoreDataConverter<AgentLevel> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as AgentLevel;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const agentKnowledgeConverter: FirestoreDataConverter<AgentKnowledgeDoc> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as AgentKnowledgeDoc;
+        return { ...rest, id: snap.id };
+    },
+};
+
+const agentRunConverter: FirestoreDataConverter<AgentRun> = {
+    toFirestore: (data) => data,
+    fromFirestore: (snap) => {
+        const rest = snap.data() as AgentRun;
         return { ...rest, id: snap.id };
     },
 };
@@ -150,3 +183,31 @@ export const jailbreakTurnsCollection = (matchId: string) =>
 export const jailbreakTurnsGroup = collectionGroup(firestoreDb, "turns").withConverter(
     jailbreakTurnConverter
 );
+
+export const agentStagesCollection = collection(firestoreDb, "agentStages").withConverter(
+    agentStageConverter
+) as CollectionReference<AgentStage>;
+
+export const agentStageDoc = (stageId: string) =>
+    doc(agentStagesCollection, stageId) as DocumentReference<AgentStage>;
+
+export const agentLevelsCollection = collection(firestoreDb, "agentLevels").withConverter(
+    agentLevelConverter
+) as CollectionReference<AgentLevel>;
+
+export const agentLevelDoc = (levelId: string) =>
+    doc(agentLevelsCollection, levelId) as DocumentReference<AgentLevel>;
+
+export const agentKnowledgeCollection = collection(firestoreDb, "agentKnowledgeDocs").withConverter(
+    agentKnowledgeConverter
+) as CollectionReference<AgentKnowledgeDoc>;
+
+export const agentKnowledgeDoc = (docId: string) =>
+    doc(agentKnowledgeCollection, docId) as DocumentReference<AgentKnowledgeDoc>;
+
+export const agentRunsCollection = collection(firestoreDb, "agentRuns").withConverter(
+    agentRunConverter
+) as CollectionReference<AgentRun>;
+
+export const agentRunDoc = (runId: string) =>
+    doc(agentRunsCollection, runId) as DocumentReference<AgentRun>;

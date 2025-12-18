@@ -44,6 +44,27 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Agent training/game collections (admin-only)
+    match /agentStages/{stageId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /agentLevels/{levelId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /agentKnowledgeDocs/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /agentRuns/{runId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /childAgentProgress/{childId} {
+      allow read, write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

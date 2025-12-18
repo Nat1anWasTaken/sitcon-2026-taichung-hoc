@@ -9,7 +9,8 @@
         "lint": "eslint",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "seed:agent": "pnpm dlx tsx scripts/seed-agent.ts"
     },
     "dependencies": {
         "@ai-sdk/google": "^2.0.46",
@@ -25,8 +26,10 @@
         "@radix-ui/react-tabs": "^1.1.13",
         "@radix-ui/react-tooltip": "^1.2.8",
         "ai": "^5.0.113",
+        "ajv": "^8.17.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "dotenv": "^17.2.3",
         "firebase": "^12.6.0",
         "firebase-admin": "^13.6.0",
         "lucide-react": "^0.561.0",
