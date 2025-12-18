@@ -61,6 +61,7 @@ export type PublicMatchView = {
     defenderScore: number;
     status?: JailbreakMatch["status"];
     developerPrompt?: string;
+    breachCriteria?: string;
     logs: Array<{
         id: string;
         attackerPrompt: string;

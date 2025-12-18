@@ -103,6 +103,7 @@ function sanitizeMatch(
         defenderScore: match.defenderScore,
         status: match.status,
         developerPrompt: role === "defender" ? match.developerPrompt : undefined,
+        breachCriteria: role === "defender" ? match.breachCriteria : undefined,
         logs: turns.map((t) => ({
             id: t.id,
             attackerPrompt: t.attackerPrompt,

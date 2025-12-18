@@ -308,6 +308,7 @@ export function JailbreakBattle() {
                                 canPatch={canPatch && match.status !== "completed"}
                                 busy={busy}
                                 phase={match.currentPhase}
+                                breachCriteria={match.breachCriteria}
                             />
                         )}
                         <div className="space-y-3">
@@ -408,6 +409,7 @@ function DefenderPanel({
     canPatch,
     busy,
     phase,
+    breachCriteria,
 }: {
     developerPrompt: string;
     setDeveloperPrompt: (v: string) => void;
@@ -415,6 +417,7 @@ function DefenderPanel({
     canPatch: boolean;
     busy: boolean;
     phase: PublicMatchView["currentPhase"];
+    breachCriteria?: string;
 }) {
     const helper =
         phase === "DEFENDER_PATCH"
@@ -425,6 +428,17 @@ function DefenderPanel({
             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
                 {helper}
             </div>
+            {breachCriteria && (
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-xs uppercase tracking-tight text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        Breach Criteria (What the bot can&apos;t say)
+                    </Label>
+                    <div className="rounded-md border-4 border-destructive bg-destructive/10 px-3 py-2 text-sm font-semibold shadow-shadow">
+                        {breachCriteria}
+                    </div>
+                </div>
+            )}
             <div className="space-y-2">
                 <Label>Developer Prompt</Label>
                 <Textarea
