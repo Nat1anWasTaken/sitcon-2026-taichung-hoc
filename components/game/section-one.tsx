@@ -45,9 +45,13 @@ export function SectionOneGame() {
     const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
     const [typedPrompt, setTypedPrompt] = useState("");
     const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const [feedback, setFeedback] = useState<string | null>(null);
-    const [match, setMatch] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(false);
+    const [resultOverlay, setResultOverlay] = useState<{
+        open: boolean;
+        match: boolean | null;
+        feedback: string | null;
+        imageUrl: string | null;
+    }>({ open: false, match: null, feedback: null, imageUrl: null });
 
     useEffect(() => {
         let active = true;
@@ -86,8 +90,6 @@ export function SectionOneGame() {
                 setProgress(progData.progress);
                 setTypedPrompt(progData.progress?.lastPrompt ?? "");
                 setImageUrl(progData.progress?.lastImageUrl ?? null);
-                setMatch(progData.progress?.lastMatch ?? null);
-                setFeedback(progData.progress?.lastFeedback ?? null);
             }
 
             if (cuesRes.ok) {
@@ -183,14 +185,16 @@ export function SectionOneGame() {
             phaseConfig.mode === "blocks" ? selectedBlocks.join(" ").trim() : typedPrompt.trim();
 
         if (!prompt) {
-            setFeedback("Add some words first!");
-            setMatch(null);
+            setResultOverlay({
+                open: true,
+                match: false,
+                feedback: "Add some words first!",
+                imageUrl,
+            });
             return;
         }
 
         setLoading(true);
-        setFeedback(null);
-        setMatch(null);
         try {
             const res = await fetch("/api/game/generate", {
                 method: "POST",
@@ -202,9 +206,13 @@ export function SectionOneGame() {
             if (!res.ok) throw new Error(data.error || "Generation failed");
 
             setImageUrl(data.imageUrl);
-            setFeedback(data.evaluation.feedback);
-            setMatch(data.evaluation.match);
             setProgress(data.progress);
+            setResultOverlay({
+                open: true,
+                match: data.evaluation.match,
+                feedback: data.evaluation.feedback,
+                imageUrl: data.imageUrl,
+            });
             if (phaseConfig.mode === "blocks") {
                 setSelectedBlocks([]);
             } else {
@@ -212,8 +220,12 @@ export function SectionOneGame() {
             }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Something went wrong";
-            setFeedback(message);
-            setMatch(null);
+            setResultOverlay({
+                open: true,
+                match: false,
+                feedback: message,
+                imageUrl,
+            });
         } finally {
             setLoading(false);
         }
@@ -297,28 +309,12 @@ export function SectionOneGame() {
                                         </>
                                     )}
                                 </Button>
-                                {match === true && (
-                                    <span className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
-                                        Nice! Next level is ready.
-                                    </span>
-                                )}
                                 {phase3Locked && progress.currentPhase === 3 && (
                                     <span className="text-sm font-semibold text-foreground/70">
                                         Waiting for admin cue + everyone to finish.
                                     </span>
                                 )}
                             </div>
-                            {feedback && (
-                                <div
-                                    className={`rounded-md border-4 px-3 py-2 text-sm font-semibold shadow-shadow ${
-                                        match
-                                            ? "border-green-600 text-green-700"
-                                            : "border-foreground"
-                                    }`}
-                                >
-                                    {feedback}
-                                </div>
-                            )}
                         </div>
 
                         <div className="space-y-3">
@@ -341,6 +337,13 @@ export function SectionOneGame() {
                         </div>
                     </CardContent>
                 </Card>
+                <ResultOverlay
+                    open={resultOverlay.open}
+                    match={resultOverlay.match}
+                    feedback={resultOverlay.feedback}
+                    imageUrl={resultOverlay.imageUrl ?? imageUrl}
+                    onClose={() => setResultOverlay((prev) => ({ ...prev, open: false }))}
+                />
             </div>
         </div>
     );
@@ -620,6 +623,61 @@ function RemovalZone() {
                 >
                     {isOver ? "Drop to remove" : "Drag here to remove"}
                 </p>
+            </div>
+        </div>
+    );
+}
+
+function ResultOverlay({
+    open,
+    match,
+    feedback,
+    imageUrl,
+    onClose,
+}: {
+    open: boolean;
+    match: boolean | null;
+    feedback: string | null;
+    imageUrl: string | null;
+    onClose: () => void;
+}) {
+    if (!open) return null;
+    const success = match === true;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div
+                className={`relative w-[95vw] max-w-3xl rounded-2xl border-4 border-foreground p-6 shadow-shadow transition-transform duration-300 ${
+                    success ? "bg-green-100" : "bg-red-100"
+                }`}
+            >
+                <div className="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full border-4 border-foreground bg-main px-4 py-1 text-xs font-semibold shadow-shadow">
+                    {success ? "Match found" : "Try again"}
+                </div>
+                <div className="grid gap-4 sm:grid-cols-[2fr,1fr] sm:items-center">
+                    <div className="space-y-3">
+                        <div className="text-2xl font-bold">
+                            {success ? "Great job! Next level unlocked." : "Not quite—tweak your prompt."}
+                        </div>
+                        <p className="text-base font-semibold text-foreground/80">
+                            {feedback ?? (success ? "Looks good!" : "Give it another go.")}
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                            <Button variant="outline" onClick={onClose} className="shadow-shadow">
+                                Continue
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
+                        {imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={imageUrl} alt="Latest generated" className="h-full w-full object-cover" />
+                        ) : (
+                            <div className="flex h-full min-h-[180px] items-center justify-center text-sm font-semibold text-foreground/60">
+                                No preview
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

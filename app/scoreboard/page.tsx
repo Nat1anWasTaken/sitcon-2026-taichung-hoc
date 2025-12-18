@@ -1,13 +1,16 @@
 "use client";
 
-import { Activity, RadioTower, RefreshCw, Users } from "lucide-react";
+import { Activity, RadioTower, RefreshCw, Shield, Swords, Users, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { allSections } from "@/lib/game/config";
 import { ScoreboardRow, ScoreboardSection } from "@/lib/scoreboard-types";
+import { AgentScoreboardRow } from "@/lib/agent-types";
+import { JailbreakScoreboardRow } from "@/lib/jailbreak-scoreboard-types";
 import { useScoreboard, sectionPhaseLabel } from "@/hooks/use-scoreboard";
 
 function formatUpdated(value?: string) {
@@ -129,14 +132,19 @@ export default function ScoreboardPage() {
     const { snapshot, loading, error } = useScoreboard();
     const [phaseTabs, setPhaseTabs] = useState<Record<string, string>>({});
 
-    const sections =
-        snapshot?.sections ??
+    const gardenSections =
+        snapshot?.garden.sections ??
         allSections.map((section) => ({
             sectionId: section.id,
             title: section.title,
             phases: section.phases.length,
             rows: [],
         }));
+
+    const jailbreakRows: JailbreakScoreboardRow[] = snapshot?.jailbreak.rows ?? [];
+    const agentRows: AgentScoreboardRow[] = snapshot?.agent.rows ?? [];
+
+    const lastSync = snapshot?.garden?.generatedAt ?? snapshot?.jailbreak?.generatedAt ?? snapshot?.agent?.generatedAt;
 
     return (
         <div className="min-h-screen bg-background px-4 py-10">
@@ -154,9 +162,9 @@ export default function ScoreboardPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <LivePill label="Live" />
-                        {snapshot && (
+                        {lastSync && (
                             <span className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-xs font-semibold shadow-shadow">
-                                Last sync {formatUpdated(snapshot.generatedAt)}
+                                Last sync {formatUpdated(lastSync)}
                             </span>
                         )}
                         {loading && (
@@ -173,21 +181,16 @@ export default function ScoreboardPage() {
                     </div>
                 )}
 
-                <Tabs defaultValue={sections[0]?.sectionId} className="w-full">
+                <Tabs defaultValue="garden" className="w-full">
                     <TabsList className="flex w-full flex-wrap gap-2 bg-secondary-background">
-                        {sections.map((section) => (
-                            <TabsTrigger key={section.sectionId} value={section.sectionId}>
-                                {section.title}
-                            </TabsTrigger>
-                        ))}
+                        <TabsTrigger value="garden">Section 1 · Garden Builders</TabsTrigger>
+                        <TabsTrigger value="jailbreak">Section 2 · Jailbreak Battle</TabsTrigger>
+                        <TabsTrigger value="agent">Section 3 · Agent War Room</TabsTrigger>
                     </TabsList>
-                    {sections.map((section) => (
-                        <TabsContent
-                            key={section.sectionId}
-                            value={section.sectionId}
-                            className="space-y-4"
-                        >
-                            <Card>
+
+                    <TabsContent value="garden" className="space-y-4">
+                        {gardenSections.map((section) => (
+                            <Card key={section.sectionId}>
                                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <CardTitle>{section.title}</CardTitle>
@@ -217,8 +220,142 @@ export default function ScoreboardPage() {
                                     />
                                 </CardContent>
                             </Card>
-                        </TabsContent>
-                    ))}
+                        ))}
+                    </TabsContent>
+
+                    <TabsContent value="jailbreak" className="space-y-4">
+                        <Card>
+                            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Swords className="h-5 w-5" /> Jailbreak Battle
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Live attacker vs defender matches. Score favors fast breaches and solid patches.
+                                    </CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
+                                    <Zap className="h-4 w-4" />
+                                    Auto-refreshing feed
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Match</TableHead>
+                                                <TableHead>Attacker</TableHead>
+                                                <TableHead>Defender</TableHead>
+                                                <TableHead>Cracks</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Updated</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {jailbreakRows.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="text-center text-sm">
+                                                        No matches yet.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {jailbreakRows.map((row) => (
+                                                <TableRow key={row.matchId}>
+                                                    <TableCell className="font-semibold">{row.matchId.slice(0, 6)}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col gap-1 text-sm font-semibold">
+                                                            <span>Seat {row.attackerSeat ?? "—"}</span>
+                                                            <span className="text-xs text-foreground/70">
+                                                                {row.attackerName || row.attackerChildId}
+                                                            </span>
+                                                            <Badge variant="outline">Score {row.attackerScore}</Badge>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col gap-1 text-sm font-semibold">
+                                                            <span>Seat {row.defenderSeat ?? "—"}</span>
+                                                            <span className="text-xs text-foreground/70">
+                                                                {row.defenderName || row.defenderChildId}
+                                                            </span>
+                                                            <Badge variant="outline">Score {row.defenderScore}</Badge>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm font-semibold">
+                                                        {row.cracksCompleted} / 3
+                                                    </TableCell>
+                                                    <TableCell className="text-sm">
+                                                        <Badge variant={row.status === "completed" ? "default" : "outline"}>
+                                                            {row.status ?? "active"}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm">{formatUpdated(row.updatedAt)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="agent" className="space-y-4">
+                        <Card>
+                            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Shield className="h-5 w-5" /> Agent War Room
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Lower tokens, higher score. Only successful runs appear here.
+                                    </CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
+                                    <RadioTower className="h-4 w-4" />
+                                    Refreshing every few seconds
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>#</TableHead>
+                                                <TableHead>Seat</TableHead>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead>Level</TableHead>
+                                                <TableHead>Stage</TableHead>
+                                                <TableHead>Tokens</TableHead>
+                                                <TableHead>Score</TableHead>
+                                                <TableHead>Best?</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {agentRows.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} className="text-center text-sm">
+                                                        No runs yet.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {agentRows.map((row, idx) => (
+                                                <TableRow key={`${row.childId}-${row.levelId}-${idx}`}>
+                                                    <TableCell>{idx + 1}</TableCell>
+                                                    <TableCell>{row.seatNumber ?? "—"}</TableCell>
+                                                    <TableCell>{row.name ?? "—"}</TableCell>
+                                                    <TableCell>{row.levelId}</TableCell>
+                                                    <TableCell>{row.stageType}</TableCell>
+                                                    <TableCell>{row.totalTokens ?? "?"}</TableCell>
+                                                    <TableCell className="font-semibold">{row.score}</TableCell>
+                                                    <TableCell>{row.bestForLevel ? "✅" : ""}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>

@@ -179,3 +179,6 @@ export const sectionOneSeed: SectionConfig = buildSectionConfigFromRecords(
     sectionOneSeedPhases,
     sectionOneSeedLevels
 );
+
+// List of all available game sections. Extend this array as new sections are added.
+export const allSections: SectionConfig[] = [sectionOneSeed];

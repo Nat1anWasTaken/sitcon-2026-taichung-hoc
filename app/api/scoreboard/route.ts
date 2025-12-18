@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { buildAgentScoreboard } from "@/lib/server/agent-scoreboard";
+import { buildJailbreakScoreboard } from "@/lib/server/jailbreak-scoreboard";
 import { buildScoreboardSnapshot } from "@/lib/server/scoreboard";
 
 export const runtime = "nodejs";
+
+type CombinedScoreboard = {
+    garden: Awaited<ReturnType<typeof buildScoreboardSnapshot>>;
+    jailbreak: Awaited<ReturnType<typeof buildJailbreakScoreboard>>;
+    agent: Awaited<ReturnType<typeof buildAgentScoreboard>>;
+};
+
+async function buildCombined(): Promise<CombinedScoreboard> {
+    const [garden, jailbreak, agent] = await Promise.all([
+        buildScoreboardSnapshot(),
+        buildJailbreakScoreboard(),
+        buildAgentScoreboard(),
+    ]);
+    return { garden, jailbreak, agent };
+}
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -11,7 +28,7 @@ export async function GET(req: NextRequest) {
     // Simple JSON snapshot for debugging or fallback clients.
     if (mode === "json") {
         try {
-            const payload = await buildScoreboardSnapshot();
+            const payload = await buildCombined();
             return NextResponse.json(payload, {
                 status: 200,
                 headers: { "Cache-Control": "no-store" },
@@ -30,7 +47,7 @@ export async function GET(req: NextRequest) {
         async start(controller) {
             const send = async () => {
                 try {
-                    const payload = await buildScoreboardSnapshot();
+                    const payload = await buildCombined();
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : "scoreboard-error";

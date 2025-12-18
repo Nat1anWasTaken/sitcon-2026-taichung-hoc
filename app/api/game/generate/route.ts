@@ -7,6 +7,7 @@ import { getCue } from "@/lib/server/cues";
 import { getSectionProgress, saveSectionProgress } from "@/lib/server/progress";
 import { fetchSectionOneConfig } from "@/lib/server/section-one";
 import { requireChildSession } from "@/lib/server/session";
+import { uploadGameImageToStorage } from "@/lib/server/storage";
 
 export async function POST(req: NextRequest) {
     let session;
@@ -37,8 +38,9 @@ export async function POST(req: NextRequest) {
 
     const target = activeLevel.target || progress.lastTarget || "the target";
 
-    const { image, dataUrl } = await generateGameImage(prompt);
+    const { image } = await generateGameImage(prompt);
     const evaluation = await evaluateImageMatch(image, target);
+    const imageUrl = await uploadGameImageToStorage(image, session.childId, sectionId);
 
     const asPhaseId = (value: number): PhaseId => Math.min(Math.max(value, 1), 3) as PhaseId;
 
@@ -88,7 +90,7 @@ export async function POST(req: NextRequest) {
         phase2Complete,
         phase3Complete,
         lastPrompt: prompt,
-        lastImageUrl: dataUrl,
+        lastImageUrl: imageUrl,
         lastTarget: target,
         lastMatch: evaluation.match,
         lastFeedback: evaluation.feedback,
@@ -97,7 +99,7 @@ export async function POST(req: NextRequest) {
     await saveSectionProgress(session.childId, sectionId, updated);
 
     return NextResponse.json({
-        imageUrl: dataUrl,
+        imageUrl,
         evaluation,
         progress: updated,
     });

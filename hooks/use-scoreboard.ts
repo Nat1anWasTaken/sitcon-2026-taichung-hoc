@@ -3,17 +3,25 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ScoreboardSection, ScoreboardSnapshot } from "@/lib/scoreboard-types";
+import { AgentScoreboardRow } from "@/lib/agent-types";
+import { JailbreakScoreboardRow } from "@/lib/jailbreak-scoreboard-types";
+
+export type CombinedScoreboards = {
+    garden: ScoreboardSnapshot;
+    jailbreak: { generatedAt: string; rows: JailbreakScoreboardRow[] };
+    agent: { generatedAt: string; rows: AgentScoreboardRow[] };
+};
 
 export type ScoreboardState = {
     loading: boolean;
     error?: string;
-    snapshot: ScoreboardSnapshot | null;
+    snapshot: CombinedScoreboards | null;
 };
 
 const FALLBACK_POLL_MS = 6000;
 
 export function useScoreboard(): ScoreboardState {
-    const [snapshot, setSnapshot] = useState<ScoreboardSnapshot | null>(null);
+    const [snapshot, setSnapshot] = useState<CombinedScoreboards | null>(null);
     const [error, setError] = useState<string | undefined>();
 
     useEffect(() => {
@@ -25,7 +33,7 @@ export function useScoreboard(): ScoreboardState {
             try {
                 const res = await fetch("/api/scoreboard?mode=json", { cache: "no-store" });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = (await res.json()) as ScoreboardSnapshot;
+                const data = (await res.json()) as CombinedScoreboards;
                 if (!cancelled) {
                     setSnapshot(data);
                     setError(undefined);
@@ -49,7 +57,7 @@ export function useScoreboard(): ScoreboardState {
 
             es = new EventSource("/api/scoreboard");
             es.onmessage = (event) => {
-                const data = JSON.parse(event.data) as ScoreboardSnapshot;
+                const data = JSON.parse(event.data) as CombinedScoreboards;
                 setSnapshot(data);
                 setError(undefined);
             };
