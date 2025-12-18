@@ -2,12 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import {
-    ArrowCounterClockwise,
     LayoutDashboard,
     Loader2,
     Pencil,
     Plus,
     Sprout,
+    RotateCcw,
     Trash2,
 } from "lucide-react";
 
@@ -30,6 +30,8 @@ import {
     updateGardenPhase,
 } from "@/lib/garden-admin";
 import { GardenLevel, GardenPhase } from "@/lib/garden-types";
+
+const MAX_PHASES = 3;
 
 function toList(value: string) {
     return value
@@ -113,6 +115,11 @@ export default function GardenAdminPage() {
         setMessage(null);
         startBusyPhase(async () => {
             try {
+                if (!editingPhase && phases.length >= MAX_PHASES) {
+                    setMessage("Only three phases are supported in Section 1. Edit an existing phase instead.");
+                    return;
+                }
+
                 if (editingPhase) {
                     await updateGardenPhase(editingPhase.id, {
                         ...phaseForm,
@@ -241,7 +248,9 @@ export default function GardenAdminPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Phases</CardTitle>
-                        <CardDescription>Create or edit the phases in order.</CardDescription>
+                        <CardDescription>
+                            Section 1 supports exactly three phases. Edit existing phases; new phases beyond three are ignored by the game.
+                        </CardDescription>
                     </div>
                     <Badge variant="outline" className="flex items-center gap-1">
                         <Sprout className="h-4 w-4" />
@@ -249,6 +258,9 @@ export default function GardenAdminPage() {
                     </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
+                        Phases allowed: {phases.length}/{MAX_PHASES}. The game only reads three phases for Section 1.
+                    </div>
                     <form className="grid gap-4 lg:grid-cols-5" onSubmit={handlePhaseSubmit}>
                         <div className="lg:col-span-2 space-y-2">
                             <Label>Title</Label>
@@ -301,7 +313,11 @@ export default function GardenAdminPage() {
                             />
                         </div>
                         <div className="flex items-end gap-2">
-                            <Button type="submit" disabled={busyPhase} className="w-full lg:w-auto">
+                            <Button
+                                type="submit"
+                                disabled={busyPhase || (!editingPhase && phases.length >= MAX_PHASES)}
+                                className="w-full lg:w-auto"
+                            >
                                 {busyPhase ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -405,7 +421,7 @@ export default function GardenAdminPage() {
                                 </>
                             ) : (
                                 <>
-                                    <ArrowCounterClockwise className="h-4 w-4" />
+                                    <RotateCcw className="h-4 w-4" />
                                     Load default seed
                                 </>
                             )}

@@ -3,9 +3,6 @@ import {
     SECTION_ONE_ID,
     SectionConfig,
     buildSectionConfigFromRecords,
-    sectionOneSeed,
-    sectionOneSeedLevels,
-    sectionOneSeedPhases,
 } from "../game/config";
 
 function assertAdminDb() {
@@ -13,7 +10,9 @@ function assertAdminDb() {
     return adminFirestore;
 }
 
-export async function fetchSectionOneConfig(): Promise<{ config: SectionConfig; source: "firestore" | "seed" }> {
+const SECTION_ONE_TITLE = "Garden Builders";
+
+export async function fetchSectionOneConfig(): Promise<{ config: SectionConfig; source: "firestore" }> {
     const db = assertAdminDb();
 
     const [phasesSnap, levelsSnap] = await Promise.all([
@@ -49,13 +48,11 @@ export async function fetchSectionOneConfig(): Promise<{ config: SectionConfig; 
     });
 
     if (!phases.length || !levels.length) {
-        return { config: sectionOneSeed, source: "seed" };
+        throw new Error(
+            "Section 1 configuration is missing in Firestore. Please add gardenPhases and gardenLevels records."
+        );
     }
 
-    const config = buildSectionConfigFromRecords(SECTION_ONE_ID, sectionOneSeed.title, phases, levels);
+    const config = buildSectionConfigFromRecords(SECTION_ONE_ID, SECTION_ONE_TITLE, phases, levels);
     return { config, source: "firestore" };
-}
-
-export async function getSectionOneDefaults() {
-    return buildSectionConfigFromRecords(SECTION_ONE_ID, sectionOneSeed.title, sectionOneSeedPhases, sectionOneSeedLevels);
 }
