@@ -98,7 +98,12 @@ export default async function AgentLevelsPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="order">Order</Label>
-                            <Input name="order" id="order" type="number" defaultValue={levels.length + 1} />
+                            <Input
+                                name="order"
+                                id="order"
+                                type="number"
+                                defaultValue={levels.length + 1}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="briefing">Briefing</Label>

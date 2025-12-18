@@ -1,10 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
-import {
-    generateJailbreakReply,
-    judgeJailbreakBreach,
-    streamJailbreakReply,
-} from "@/lib/ai";
+import { generateJailbreakReply, judgeJailbreakBreach, streamJailbreakReply } from "@/lib/ai";
 import { adminFirestore } from "../firebase-admin";
 import { getCue } from "./cues";
 import { getSectionProgress } from "./progress";
@@ -47,7 +43,15 @@ async function getTotalThemeCount(): Promise<number> {
     return themesSnap.size;
 }
 
-async function selectNextTheme(match: JailbreakMatch): Promise<{ themeId: string; themeTitle: string; themeDescription: string; adminPrompt: string; breachCriteria: string } | null> {
+async function selectNextTheme(
+    match: JailbreakMatch
+): Promise<{
+    themeId: string;
+    themeTitle: string;
+    themeDescription: string;
+    adminPrompt: string;
+    breachCriteria: string;
+} | null> {
     const db = assertAdminDb();
     const themesSnap = await db.collection(THEMES_COLLECTION).get();
 
@@ -325,7 +329,8 @@ export async function recordAttackAttempt(params: {
     await turnRef.set(turnPayload);
 
     let cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
-    let currentPhase: MatchPhase = verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+    let currentPhase: MatchPhase =
+        verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
     let status: JailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
@@ -406,8 +411,7 @@ export async function* streamAttackAttempt(params: {
     childId: string;
     attackerPrompt: string;
 }): AsyncGenerator<
-    | { type: "chunk"; content: string }
-    | { type: "complete"; match: PublicMatchView },
+    { type: "chunk"; content: string } | { type: "complete"; match: PublicMatchView },
     void,
     undefined
 > {
@@ -463,7 +467,8 @@ export async function* streamAttackAttempt(params: {
     await turnRef.set(turnPayload);
 
     let cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
-    let currentPhase: MatchPhase = verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+    let currentPhase: MatchPhase =
+        verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
     let status: JailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;

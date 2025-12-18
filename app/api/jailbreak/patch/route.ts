@@ -31,9 +31,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ match });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Patch failed";
-        const status = message.startsWith("Section 2") || message.startsWith("Complete Section 1")
-            ? 403
-            : 400;
+        const status =
+            message.startsWith("Section 2") || message.startsWith("Complete Section 1") ? 403 : 400;
         return NextResponse.json({ error: message }, { status });
     }
 }

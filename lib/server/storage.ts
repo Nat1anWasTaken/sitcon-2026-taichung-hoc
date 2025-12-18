@@ -11,7 +11,12 @@ const r2Env = {
 };
 
 function assertR2Env() {
-    const requiredKeys: (keyof typeof r2Env)[] = ["accessKeyId", "secretAccessKey", "bucket", "endpoint"];
+    const requiredKeys: (keyof typeof r2Env)[] = [
+        "accessKeyId",
+        "secretAccessKey",
+        "bucket",
+        "endpoint",
+    ];
     const missingRequired = requiredKeys.filter((key) => !r2Env[key]);
 
     if (missingRequired.length) {
@@ -65,9 +70,13 @@ export async function uploadGameImageToStorage(
         })
     );
 
-    const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: r2Env.bucket!, Key: filename }), {
-        expiresIn: 60 * 60 * 24 * 7, // 7 days
-    });
+    const url = await getSignedUrl(
+        client,
+        new GetObjectCommand({ Bucket: r2Env.bucket!, Key: filename }),
+        {
+            expiresIn: 60 * 60 * 24 * 7, // 7 days
+        }
+    );
 
     return url;
 }

@@ -11,7 +11,9 @@ export async function GET() {
         const progress = await getAgentProgress(session.childId);
         const stages = await listAgentStages({ activeOnly: true });
         const levels = (
-            await Promise.all(stages.map((s) => listAgentLevelsByStage(s.stageType, { activeOnly: true })))
+            await Promise.all(
+                stages.map((s) => listAgentLevelsByStage(s.stageType, { activeOnly: true }))
+            )
         )
             .flat()
             .sort((a, b) => a.order - b.order);

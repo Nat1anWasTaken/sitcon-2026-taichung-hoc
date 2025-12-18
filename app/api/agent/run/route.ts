@@ -3,7 +3,12 @@ import { Timestamp } from "firebase-admin/firestore";
 
 import { AgentLevel } from "@/lib/server/agent-types";
 import { runLevelEngine } from "@/lib/server/agent-engine";
-import { listAgentStages, listAgentLevelsByStage, recordAgentRun, updateBestForLevel } from "@/lib/server/agent-store";
+import {
+    listAgentStages,
+    listAgentLevelsByStage,
+    recordAgentRun,
+    updateBestForLevel,
+} from "@/lib/server/agent-store";
 import { getAgentProgress, saveAgentProgress } from "@/lib/server/agent-progress";
 import { listActiveCues } from "@/lib/server/cues";
 import { requireChildSession } from "@/lib/server/session";

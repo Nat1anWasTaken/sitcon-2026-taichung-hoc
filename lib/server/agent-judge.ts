@@ -31,7 +31,9 @@ export function judgeReferee(expected: AgentLevelExpected, answer: string): Judg
     const needsDoc = criteria.includes("doc");
     const passed =
         answer.trim().length > 0 &&
-        (!needsDoc || answer.toLowerCase().includes("doc") || answer.toLowerCase().includes("docid"));
+        (!needsDoc ||
+            answer.toLowerCase().includes("doc") ||
+            answer.toLowerCase().includes("docid"));
     return { passed, failureReason: passed ? undefined : "WRONG_ANSWER" };
 }
 

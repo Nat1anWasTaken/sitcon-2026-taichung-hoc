@@ -1,13 +1,7 @@
 import { FieldValue, Query, Timestamp } from "firebase-admin/firestore";
 
 import { adminFirestore } from "../firebase-admin";
-import {
-    AgentKnowledgeDoc,
-    AgentLevel,
-    AgentRun,
-    AgentStage,
-    AgentStageType,
-} from "./agent-types";
+import { AgentKnowledgeDoc, AgentLevel, AgentRun, AgentStage, AgentStageType } from "./agent-types";
 
 function assertAdminDb() {
     if (!adminFirestore) throw new Error("Admin Firestore not initialized");

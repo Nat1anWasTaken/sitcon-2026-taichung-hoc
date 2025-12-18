@@ -23,8 +23,7 @@ type ChatMessage =
     | {
           role: "system" | "user" | "assistant";
           content: Array<
-              | { type: "text"; text: string }
-              | { type: "image_url"; image_url: { url: string } }
+              { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }
           >;
       };
 
@@ -183,7 +182,10 @@ export async function generateGameImage(prompt: string) {
     }
 
     if (!base64) {
-        console.error("OpenRouter image gen error. Completion:", JSON.stringify(completion, null, 2));
+        console.error(
+            "OpenRouter image gen error. Completion:",
+            JSON.stringify(completion, null, 2)
+        );
         throw new Error("No image returned from OpenRouter");
     }
 

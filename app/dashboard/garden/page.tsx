@@ -1,23 +1,28 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
-import {
-    LayoutDashboard,
-    Loader2,
-    Pencil,
-    Plus,
-    Sprout,
-    RotateCcw,
-    Trash2,
-} from "lucide-react";
+import { LayoutDashboard, Loader2, Pencil, Plus, Sprout, RotateCcw, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useGardenContent } from "@/hooks/use-garden";
 import {
@@ -89,10 +94,7 @@ export default function GardenAdminPage() {
         });
     }, [editingLevel]);
 
-    const sortedPhases = useMemo(
-        () => [...phases].sort((a, b) => a.order - b.order),
-        [phases]
-    );
+    const sortedPhases = useMemo(() => [...phases].sort((a, b) => a.order - b.order), [phases]);
 
     const groupedLevels = useMemo(() => {
         return sortedPhases.map((phase) => ({
@@ -116,7 +118,8 @@ export default function GardenAdminPage() {
         startBusyPhase(async () => {
             try {
                 const orderClash = phases.some(
-                    (p) => p.order === phaseForm.order && (!editingPhase || p.id !== editingPhase.id)
+                    (p) =>
+                        p.order === phaseForm.order && (!editingPhase || p.id !== editingPhase.id)
                 );
                 if (orderClash) {
                     setMessage("Each phase needs a unique order number. Pick a different order.");
@@ -124,7 +127,9 @@ export default function GardenAdminPage() {
                 }
 
                 if (!editingPhase && phases.length >= MAX_PHASES) {
-                    setMessage("Only three phases are supported in Section 1. Edit an existing phase instead.");
+                    setMessage(
+                        "Only three phases are supported in Section 1. Edit an existing phase instead."
+                    );
                     return;
                 }
 
@@ -257,7 +262,8 @@ export default function GardenAdminPage() {
                     <div>
                         <CardTitle>Phases</CardTitle>
                         <CardDescription>
-                            Section 1 supports exactly three phases. Edit existing phases; new phases beyond three are ignored by the game.
+                            Section 1 supports exactly three phases. Edit existing phases; new
+                            phases beyond three are ignored by the game.
                         </CardDescription>
                     </div>
                     <Badge variant="outline" className="flex items-center gap-1">
@@ -267,7 +273,8 @@ export default function GardenAdminPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
-                        Phases allowed: {phases.length}/{MAX_PHASES}. The game only reads three phases for Section 1.
+                        Phases allowed: {phases.length}/{MAX_PHASES}. The game only reads three
+                        phases for Section 1.
                     </div>
                     <form className="grid gap-4 lg:grid-cols-5" onSubmit={handlePhaseSubmit}>
                         <div className="lg:col-span-2 space-y-2">
@@ -275,7 +282,9 @@ export default function GardenAdminPage() {
                             <Input
                                 required
                                 value={phaseForm.title}
-                                onChange={(e) => setPhaseForm({ ...phaseForm, title: e.target.value })}
+                                onChange={(e) =>
+                                    setPhaseForm({ ...phaseForm, title: e.target.value })
+                                }
                                 placeholder="Prompt Blocks"
                             />
                         </div>
@@ -283,7 +292,9 @@ export default function GardenAdminPage() {
                             <Label>Mode</Label>
                             <Select
                                 value={phaseForm.mode}
-                                onValueChange={(val) => setPhaseForm({ ...phaseForm, mode: val as GardenPhase["mode"] })}
+                                onValueChange={(val) =>
+                                    setPhaseForm({ ...phaseForm, mode: val as GardenPhase["mode"] })
+                                }
                             >
                                 <SelectTrigger>
                                     <SelectValue />
@@ -300,7 +311,9 @@ export default function GardenAdminPage() {
                                 type="number"
                                 min={1}
                                 value={phaseForm.order}
-                                onChange={(e) => setPhaseForm({ ...phaseForm, order: Number(e.target.value) })}
+                                onChange={(e) =>
+                                    setPhaseForm({ ...phaseForm, order: Number(e.target.value) })
+                                }
                             />
                             <p className="text-xs font-semibold text-foreground/70">
                                 Order must be unique; duplicates are rejected.
@@ -310,7 +323,9 @@ export default function GardenAdminPage() {
                             <Label>Locked by cue (optional)</Label>
                             <Input
                                 value={phaseForm.lockedByCue}
-                                onChange={(e) => setPhaseForm({ ...phaseForm, lockedByCue: e.target.value })}
+                                onChange={(e) =>
+                                    setPhaseForm({ ...phaseForm, lockedByCue: e.target.value })
+                                }
                                 placeholder="start-phase-3"
                             />
                         </div>
@@ -319,14 +334,18 @@ export default function GardenAdminPage() {
                             <Textarea
                                 rows={2}
                                 value={phaseForm.description}
-                                onChange={(e) => setPhaseForm({ ...phaseForm, description: e.target.value })}
+                                onChange={(e) =>
+                                    setPhaseForm({ ...phaseForm, description: e.target.value })
+                                }
                                 placeholder="Explain the goal for this phase"
                             />
                         </div>
                         <div className="flex items-end gap-2">
                             <Button
                                 type="submit"
-                                disabled={busyPhase || (!editingPhase && phases.length >= MAX_PHASES)}
+                                disabled={
+                                    busyPhase || (!editingPhase && phases.length >= MAX_PHASES)
+                                }
                                 className="w-full lg:w-auto"
                             >
                                 {busyPhase ? (
@@ -421,7 +440,9 @@ export default function GardenAdminPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Levels</CardTitle>
-                        <CardDescription>Manage targets and optional prompt blocks per phase.</CardDescription>
+                        <CardDescription>
+                            Manage targets and optional prompt blocks per phase.
+                        </CardDescription>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Button variant="outline" onClick={handleReset} disabled={busyReset}>
@@ -446,7 +467,9 @@ export default function GardenAdminPage() {
                             <Label>Phase</Label>
                             <Select
                                 value={levelForm.phaseId}
-                                onValueChange={(val) => setLevelForm({ ...levelForm, phaseId: val })}
+                                onValueChange={(val) =>
+                                    setLevelForm({ ...levelForm, phaseId: val })
+                                }
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Pick phase" />
@@ -466,7 +489,12 @@ export default function GardenAdminPage() {
                                 type="number"
                                 min={1}
                                 value={levelForm.levelNumber}
-                                onChange={(e) => setLevelForm({ ...levelForm, levelNumber: Number(e.target.value) })}
+                                onChange={(e) =>
+                                    setLevelForm({
+                                        ...levelForm,
+                                        levelNumber: Number(e.target.value),
+                                    })
+                                }
                             />
                         </div>
                         <div className="lg:col-span-2 space-y-2">
@@ -474,7 +502,9 @@ export default function GardenAdminPage() {
                             <Input
                                 required
                                 value={levelForm.target}
-                                onChange={(e) => setLevelForm({ ...levelForm, target: e.target.value })}
+                                onChange={(e) =>
+                                    setLevelForm({ ...levelForm, target: e.target.value })
+                                }
                                 placeholder="Describe the desired image"
                             />
                         </div>
@@ -483,7 +513,9 @@ export default function GardenAdminPage() {
                             <Textarea
                                 rows={3}
                                 value={levelForm.blocks}
-                                onChange={(e) => setLevelForm({ ...levelForm, blocks: e.target.value })}
+                                onChange={(e) =>
+                                    setLevelForm({ ...levelForm, blocks: e.target.value })
+                                }
                                 placeholder="Generate\na cute rabbit"
                             />
                         </div>
@@ -492,7 +524,9 @@ export default function GardenAdminPage() {
                             <Textarea
                                 rows={3}
                                 value={levelForm.bonusBlocks}
-                                onChange={(e) => setLevelForm({ ...levelForm, bonusBlocks: e.target.value })}
+                                onChange={(e) =>
+                                    setLevelForm({ ...levelForm, bonusBlocks: e.target.value })
+                                }
                                 placeholder="soft lighting\nwide angle"
                             />
                         </div>
@@ -501,11 +535,17 @@ export default function GardenAdminPage() {
                             <Textarea
                                 rows={2}
                                 value={levelForm.hint}
-                                onChange={(e) => setLevelForm({ ...levelForm, hint: e.target.value })}
+                                onChange={(e) =>
+                                    setLevelForm({ ...levelForm, hint: e.target.value })
+                                }
                             />
                         </div>
                         <div className="flex items-end gap-2">
-                            <Button type="submit" disabled={busyLevel || !levelForm.phaseId} className="w-full lg:w-auto">
+                            <Button
+                                type="submit"
+                                disabled={busyLevel || !levelForm.phaseId}
+                                className="w-full lg:w-auto"
+                            >
                                 {busyLevel ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -547,10 +587,16 @@ export default function GardenAdminPage() {
 
                     <div className="space-y-4">
                         {groupedLevels.map(({ phase, levels: phaseLevels }) => (
-                            <div key={phase.id} className="rounded-md border-4 border-foreground bg-secondary-background p-4 shadow-shadow">
+                            <div
+                                key={phase.id}
+                                className="rounded-md border-4 border-foreground bg-secondary-background p-4 shadow-shadow"
+                            >
                                 <div className="mb-3 flex items-center justify-between">
                                     <div className="font-bold">
-                                        {phase.title} <span className="text-sm font-semibold text-foreground/60">(order {phase.order})</span>
+                                        {phase.title}{" "}
+                                        <span className="text-sm font-semibold text-foreground/60">
+                                            (order {phase.order})
+                                        </span>
                                     </div>
                                     <Badge variant="outline">{phaseLevels.length} level(s)</Badge>
                                 </div>
@@ -567,8 +613,12 @@ export default function GardenAdminPage() {
                                     <TableBody>
                                         {phaseLevels.map((lvl) => (
                                             <TableRow key={lvl.id}>
-                                                <TableCell className="font-semibold">{lvl.levelNumber}</TableCell>
-                                                <TableCell className="max-w-md">{lvl.target}</TableCell>
+                                                <TableCell className="font-semibold">
+                                                    {lvl.levelNumber}
+                                                </TableCell>
+                                                <TableCell className="max-w-md">
+                                                    {lvl.target}
+                                                </TableCell>
                                                 <TableCell className="text-xs text-foreground/80">
                                                     {(lvl.blocks ?? []).join(", ") || "—"}
                                                 </TableCell>
@@ -577,13 +627,19 @@ export default function GardenAdminPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
-                                                        <Button variant="outline" size="icon" onClick={() => setEditingLevel(lvl)}>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() => setEditingLevel(lvl)}
+                                                        >
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => handleLevelDelete(lvl.id)}
+                                                            onClick={() =>
+                                                                handleLevelDelete(lvl.id)
+                                                            }
                                                             disabled={busyReset}
                                                         >
                                                             <Trash2 className="h-4 w-4" />
@@ -594,7 +650,10 @@ export default function GardenAdminPage() {
                                         ))}
                                         {!phaseLevels.length && (
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center font-semibold">
+                                                <TableCell
+                                                    colSpan={5}
+                                                    className="text-center font-semibold"
+                                                >
                                                     No levels for this phase yet.
                                                 </TableCell>
                                             </TableRow>

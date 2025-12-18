@@ -29,7 +29,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import {
     Dialog,
     DialogContent,
@@ -174,7 +181,9 @@ export default function JailbreakAdminPage() {
     };
 
     const handleReset = async () => {
-        const confirmReset = window.confirm("Replace all themes with the default seed? This will NOT affect existing matches.");
+        const confirmReset = window.confirm(
+            "Replace all themes with the default seed? This will NOT affect existing matches."
+        );
         if (!confirmReset) return;
         setBusyReset(true);
         setThemeMessage(null);
@@ -212,7 +221,9 @@ export default function JailbreakAdminPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Create a level</CardTitle>
-                        <CardDescription>Hidden admin prompt stays invisible to kids.</CardDescription>
+                        <CardDescription>
+                            Hidden admin prompt stays invisible to kids.
+                        </CardDescription>
                     </div>
                     <Badge variant="outline">Black Box</Badge>
                 </CardHeader>
@@ -248,7 +259,10 @@ export default function JailbreakAdminPage() {
                                 <Select
                                     value={themeForm.difficulty}
                                     onValueChange={(v) =>
-                                        setThemeForm((s) => ({ ...s, difficulty: v as JailbreakDifficulty }))
+                                        setThemeForm((s) => ({
+                                            ...s,
+                                            difficulty: v as JailbreakDifficulty,
+                                        }))
                                     }
                                 >
                                     <SelectTrigger>
@@ -282,14 +296,17 @@ export default function JailbreakAdminPage() {
                                     required
                                     value={themeForm.breachCriteria}
                                     onChange={(e) =>
-                                        setThemeForm((s) => ({ ...s, breachCriteria: e.target.value }))
+                                        setThemeForm((s) => ({
+                                            ...s,
+                                            breachCriteria: e.target.value,
+                                        }))
                                     }
                                     placeholder='The response must contain the exact phrase "motor oil".'
                                 />
                             </div>
                             <div className="text-xs font-semibold text-foreground/70">
-                                Admin prompt stays hidden from both attacker and defender. Breach rules
-                                are only used by the AI Referee.
+                                Admin prompt stays hidden from both attacker and defender. Breach
+                                rules are only used by the AI Referee.
                             </div>
                         </div>
                         <div className="md:col-span-2 flex items-center justify-between">
@@ -317,7 +334,9 @@ export default function JailbreakAdminPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Theme library</CardTitle>
-                        <CardDescription>Review, tweak, or retire existing jailbreak levels.</CardDescription>
+                        <CardDescription>
+                            Review, tweak, or retire existing jailbreak levels.
+                        </CardDescription>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Button variant="outline" onClick={handleReset} disabled={busyReset}>
@@ -408,7 +427,9 @@ export default function JailbreakAdminPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>Battle monitor</CardTitle>
-                        <CardDescription>Pair students, assign a theme, and oversee progress.</CardDescription>
+                        <CardDescription>
+                            Pair students, assign a theme, and oversee progress.
+                        </CardDescription>
                     </div>
                     <Badge variant="outline" className="gap-1">
                         <Flame className="h-4 w-4" />
@@ -463,7 +484,9 @@ export default function JailbreakAdminPage() {
                                 onValueChange={(v) => setMatchForm((s) => ({ ...s, themeId: v }))}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder={themesLoading ? "Loading…" : "Pick"} />
+                                    <SelectValue
+                                        placeholder={themesLoading ? "Loading…" : "Pick"}
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {themes.map((t) => (
@@ -521,7 +544,8 @@ export default function JailbreakAdminPage() {
                         <DialogHeader>
                             <DialogTitle>Edit theme</DialogTitle>
                             <DialogDescription>
-                                Adjust copy, difficulty, or referee guidance. Changes apply to new matches.
+                                Adjust copy, difficulty, or referee guidance. Changes apply to new
+                                matches.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -531,7 +555,9 @@ export default function JailbreakAdminPage() {
                                 id="edit-title"
                                 required
                                 value={editForm.title}
-                                onChange={(e) => setEditForm((s) => ({ ...s, title: e.target.value }))}
+                                onChange={(e) =>
+                                    setEditForm((s) => ({ ...s, title: e.target.value }))
+                                }
                             />
                         </div>
                         <div className="space-y-1">
@@ -567,7 +593,10 @@ export default function JailbreakAdminPage() {
                                     className="min-h-[120px]"
                                     value={editForm.breachCriteria}
                                     onChange={(e) =>
-                                        setEditForm((s) => ({ ...s, breachCriteria: e.target.value }))
+                                        setEditForm((s) => ({
+                                            ...s,
+                                            breachCriteria: e.target.value,
+                                        }))
                                     }
                                 />
                             </div>
@@ -577,7 +606,10 @@ export default function JailbreakAdminPage() {
                             <Select
                                 value={editForm.difficulty}
                                 onValueChange={(v) =>
-                                    setEditForm((s) => ({ ...s, difficulty: v as JailbreakDifficulty }))
+                                    setEditForm((s) => ({
+                                        ...s,
+                                        difficulty: v as JailbreakDifficulty,
+                                    }))
                                 }
                             >
                                 <SelectTrigger>

@@ -211,14 +211,21 @@ export function AgentWarRoom() {
                                     className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm"
                                 >
                                     <div className="font-semibold">
-                                        {ev.type === "tool_call" ? "Tool call" : "Tool result"} · {ev.name}
+                                        {ev.type === "tool_call" ? "Tool call" : "Tool result"} ·{" "}
+                                        {ev.name}
                                     </div>
                                     <pre className="mt-1 whitespace-pre-wrap text-xs">
-{JSON.stringify(ev.type === "tool_call" ? ev.params : ev.result, null, 2)}
+                                        {JSON.stringify(
+                                            ev.type === "tool_call" ? ev.params : ev.result,
+                                            null,
+                                            2
+                                        )}
                                     </pre>
                                 </div>
                             ))}
-                            {!events.length && <div className="text-xs text-muted-foreground">等待輸出…</div>}
+                            {!events.length && (
+                                <div className="text-xs text-muted-foreground">等待輸出…</div>
+                            )}
                         </div>
                     </div>
 
@@ -230,9 +237,13 @@ export function AgentWarRoom() {
                             </div>
                             <div className="rounded-md border-4 border-foreground bg-background px-3 py-2 shadow-shadow">
                                 <div className="font-semibold text-green-700">
-                                    {final.passed ? "PASS" : `FAIL (${final.failureReason ?? "unknown"})`}
+                                    {final.passed
+                                        ? "PASS"
+                                        : `FAIL (${final.failureReason ?? "unknown"})`}
                                 </div>
-                                <div className="text-sm whitespace-pre-wrap">{final.finalAnswer}</div>
+                                <div className="text-sm whitespace-pre-wrap">
+                                    {final.finalAnswer}
+                                </div>
                                 {final.usage?.totalTokens != null && (
                                     <div className="text-xs text-muted-foreground">
                                         totalTokens ≈ {final.usage.totalTokens}
@@ -265,7 +276,9 @@ export function AgentWarRoom() {
                                 <div className="font-semibold">{lvl.id}</div>
                                 <StagePill stageType={lvl.stageType} />
                             </div>
-                            <div className="text-xs text-muted-foreground line-clamp-2">{lvl.briefing}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">
+                                {lvl.briefing}
+                            </div>
                         </div>
                     ))}
                     <div className="text-xs text-muted-foreground">

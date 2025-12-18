@@ -1,9 +1,5 @@
 import { adminFirestore } from "../firebase-admin";
-import {
-    SECTION_ONE_ID,
-    SectionConfig,
-    buildSectionConfigFromRecords,
-} from "../game/config";
+import { SECTION_ONE_ID, SectionConfig, buildSectionConfigFromRecords } from "../game/config";
 
 function assertAdminDb() {
     if (!adminFirestore) throw new Error("Admin Firestore not initialized");
@@ -12,7 +8,10 @@ function assertAdminDb() {
 
 const SECTION_ONE_TITLE = "Garden Builders";
 
-export async function fetchSectionOneConfig(): Promise<{ config: SectionConfig; source: "firestore" }> {
+export async function fetchSectionOneConfig(): Promise<{
+    config: SectionConfig;
+    source: "firestore";
+}> {
     const db = assertAdminDb();
 
     const [phasesSnap, levelsSnap] = await Promise.all([
