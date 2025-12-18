@@ -46,6 +46,15 @@
     //     ]
     //   },
     // ]
-    "indexes": [],
+    "indexes": [
+        {
+            "collectionGroup": "gardenLevels",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "phaseId", "order": "ASCENDING" },
+                { "fieldPath": "levelNumber", "order": "ASCENDING" }
+            ]
+        }
+    ],
     "fieldOverrides": []
 }
