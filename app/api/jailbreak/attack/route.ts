@@ -1,10 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import {
-    recordAttackAttempt,
-    requireSectionOneComplete,
-    requireSectionTwoCue,
-} from "@/lib/server/jailbreak";
+import { streamAttackAttempt } from "@/lib/server/jailbreak";
 import { requireChildSession } from "@/lib/server/session";
 
 export async function POST(req: NextRequest) {
@@ -12,30 +8,62 @@ export async function POST(req: NextRequest) {
     try {
         session = await requireChildSession(req);
     } catch {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+        });
     }
 
     try {
         const { prompt, matchId } = await req.json();
         if (!prompt || typeof prompt !== "string") {
-            return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+            return new Response(JSON.stringify({ error: "Prompt is required" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            });
         }
 
-        await requireSectionTwoCue();
-        await requireSectionOneComplete(session.childId);
-        const match = await recordAttackAttempt({
-            childId: session.childId,
-            matchId,
-            attackerPrompt: prompt,
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+            async start(controller) {
+                try {
+                    for await (const event of streamAttackAttempt({
+                        childId: session.childId,
+                        matchId,
+                        attackerPrompt: prompt,
+                    })) {
+                        const data = `data: ${JSON.stringify(event)}\n\n`;
+                        controller.enqueue(encoder.encode(data));
+                    }
+                    controller.close();
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : "Attack failed";
+                    const errorEvent = {
+                        type: "error",
+                        error: message,
+                    };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`));
+                    controller.close();
+                }
+            },
         });
 
-        return NextResponse.json({ match });
+        return new Response(stream, {
+            headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+            },
+        });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Attack failed";
         const status = message.startsWith("Section 2") || message.startsWith("Complete Section 1")
             ? 403
             : 400;
-        return NextResponse.json({ error: message }, { status });
+        return new Response(JSON.stringify({ error: message }), {
+            status,
+            headers: { "Content-Type": "application/json" },
+        });
     }
 }
 

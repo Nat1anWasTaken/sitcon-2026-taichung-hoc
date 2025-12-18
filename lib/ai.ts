@@ -289,6 +289,90 @@ export async function generateJailbreakReply({
     return { text: reply.trim(), tokensUsed };
 }
 
+export async function* streamJailbreakReply({
+    adminPrompt,
+    developerPrompt,
+    attackerPrompt,
+}: {
+    adminPrompt: string;
+    developerPrompt: string;
+    attackerPrompt: string;
+}): AsyncGenerator<string, { fullText: string; tokensUsed?: number }, undefined> {
+    if (!openRouterKey) throw new Error("Missing OPENROUTER_API_KEY");
+
+    const composite = `${adminPrompt}\n\n--- ADDITIONAL INSTRUCTIONS ---\n\n${developerPrompt}`;
+
+    const res = await fetch(`${openRouterBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openRouterKey}`,
+            "HTTP-Referer": openRouterSite,
+            "X-Title": openRouterTitle,
+        },
+        body: JSON.stringify({
+            model: textModelId,
+            messages: [
+                { role: "system", content: composite },
+                { role: "user", content: attackerPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 320,
+            stream: true,
+        }),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`OpenRouter request failed (${res.status}): ${text}`);
+    }
+
+    if (!res.body) {
+        throw new Error("No response body from OpenRouter");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+    let tokensUsed: number | undefined;
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+            for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                    const data = line.slice(6);
+                    if (data === "[DONE]") continue;
+
+                    try {
+                        const parsed = JSON.parse(data);
+                        const delta = parsed.choices?.[0]?.delta?.content;
+                        if (delta) {
+                            fullText += delta;
+                            yield delta;
+                        }
+
+                        if (parsed.usage?.total_tokens) {
+                            tokensUsed = parsed.usage.total_tokens;
+                        }
+                    } catch (e) {
+                        // Skip invalid JSON
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+
+    return { fullText: fullText.trim(), tokensUsed };
+}
+
 export async function judgeJailbreakBreach({
     breachCriteria,
     aiResponse,

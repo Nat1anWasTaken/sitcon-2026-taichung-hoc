@@ -41,6 +41,7 @@ export function JailbreakBattle() {
     const [attackInput, setAttackInput] = useState("");
     const [developerDraft, setDeveloperDraft] = useState("");
     const [busy, setBusy] = useState(false);
+    const [streamingResponse, setStreamingResponse] = useState("");
 
     const fetchMatch = async (showSpinner = false) => {
         // Only flip the full-screen loading state on the first load or when explicitly asked.
@@ -99,6 +100,7 @@ export function JailbreakBattle() {
     const handleAttack = async () => {
         if (!attackInput.trim() || !matchState.data) return;
         setBusy(true);
+        setStreamingResponse("");
         try {
             const res = await fetch("/api/jailbreak/attack", {
                 method: "POST",
@@ -109,13 +111,50 @@ export function JailbreakBattle() {
                 }),
                 credentials: "include",
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Attack failed");
-            setMatchState({ loading: false, data: data.match });
-            setAttackInput("");
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Attack failed");
+            }
+
+            const reader = res.body?.getReader();
+            if (!reader) throw new Error("No response body");
+
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        const data = line.slice(6);
+                        try {
+                            const event = JSON.parse(data);
+                            if (event.type === "chunk") {
+                                setStreamingResponse((prev) => prev + event.content);
+                            } else if (event.type === "complete") {
+                                setMatchState({ loading: false, data: event.match });
+                                setStreamingResponse("");
+                                setAttackInput("");
+                            } else if (event.type === "error") {
+                                throw new Error(event.error);
+                            }
+                        } catch (e) {
+                            if (e instanceof Error) throw e;
+                        }
+                    }
+                }
+            }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Attack failed";
             setMatchState((s) => ({ ...s, error: message }));
+            setStreamingResponse("");
         } finally {
             setBusy(false);
         }
@@ -193,7 +232,7 @@ export function JailbreakBattle() {
                         <p className="text-sm text-foreground/70">
                             Keep this tab open — the game will refresh once a match is created.
                         </p>
-                        <Button variant="ghost" onClick={fetchMatch} className="gap-2">
+                        <Button variant="ghost" onClick={() => fetchMatch()} className="gap-2">
                             <Timer className="h-4 w-4" />
                             Check again
                         </Button>
@@ -275,7 +314,7 @@ export function JailbreakBattle() {
                             <Label className="text-xs uppercase tracking-tight text-foreground/70">
                                 Live log
                             </Label>
-                            <LogList logs={match.logs} />
+                            <LogList logs={match.logs} streamingResponse={streamingResponse} />
                         </div>
                     </CardContent>
                 </Card>
@@ -423,8 +462,14 @@ function CrackMeter({ cracks }: { cracks: number }) {
     );
 }
 
-function LogList({ logs }: { logs: PublicMatchView["logs"] }) {
-    if (logs.length === 0) {
+function LogList({
+    logs,
+    streamingResponse,
+}: {
+    logs: PublicMatchView["logs"];
+    streamingResponse?: string;
+}) {
+    if (logs.length === 0 && !streamingResponse) {
         return (
             <div className="rounded-md border-4 border-dashed border-border px-3 py-6 text-center text-sm font-semibold text-foreground/70">
                 No attempts yet.
@@ -434,6 +479,26 @@ function LogList({ logs }: { logs: PublicMatchView["logs"] }) {
 
     return (
         <div className="space-y-3">
+            {streamingResponse && (
+                <div className="rounded-md border-4 border-main bg-secondary-background p-3 shadow-shadow animate-pulse">
+                    <div className="flex items-center justify-between text-xs font-semibold uppercase text-foreground/60">
+                        <span>Streaming...</span>
+                        <span className="text-main">LIVE</span>
+                    </div>
+                    <div className="mt-2 space-y-2 text-sm">
+                        <div>
+                            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-foreground/60">
+                                <Shield className="h-3 w-3" />
+                                AI Response
+                            </div>
+                            <div className="rounded-md border-2 border-border bg-background px-3 py-2 text-sm">
+                                {streamingResponse}
+                                <span className="ml-1 inline-block h-4 w-0.5 animate-pulse bg-foreground" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {logs.map((log) => (
                 <div
                     key={log.id}
@@ -469,10 +534,12 @@ function LogList({ logs }: { logs: PublicMatchView["logs"] }) {
                             </div>
                         </div>
                         <div className="flex items-center justify-between text-xs font-semibold">
-                            <span className="flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Referee: {log.refereeReason ?? "No reason"}
-                            </span>
+                            {log.refereeReason && (
+                                <span className="flex items-center gap-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    Referee: {log.refereeReason}
+                                </span>
+                            )}
                             {typeof log.tokensUsed === "number" && (
                                 <span className="flex items-center gap-1">
                                     <Timer className="h-3 w-3" />

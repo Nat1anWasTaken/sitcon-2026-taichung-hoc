@@ -1,6 +1,10 @@
 import { FieldValue } from "firebase-admin/firestore";
 
-import { generateJailbreakReply, judgeJailbreakBreach } from "@/lib/ai";
+import {
+    generateJailbreakReply,
+    judgeJailbreakBreach,
+    streamJailbreakReply,
+} from "@/lib/ai";
 import { adminFirestore } from "../firebase-admin";
 import { getCue } from "./cues";
 import { getSectionProgress } from "./progress";
@@ -99,17 +103,15 @@ function sanitizeMatch(
         defenderScore: match.defenderScore,
         status: match.status,
         developerPrompt: role === "defender" ? match.developerPrompt : undefined,
-        logs: turns
-            .map((t) => ({
-                id: t.id,
-                attackerPrompt: t.attackerPrompt,
-                aiResponse: t.aiResponse,
-                breach: t.breach,
-                refereeReason: t.refereeReason,
-                tokensUsed: t.tokensUsed,
-                createdAt: t.createdAt.toDate().toISOString(),
-            }))
-            .reverse(),
+        logs: turns.map((t) => ({
+            id: t.id,
+            attackerPrompt: t.attackerPrompt,
+            aiResponse: t.aiResponse,
+            breach: t.breach,
+            refereeReason: role === "defender" ? t.refereeReason : undefined,
+            tokensUsed: t.tokensUsed,
+            createdAt: t.createdAt.toDate().toISOString(),
+        })),
     };
 }
 
@@ -199,6 +201,102 @@ export async function recordAttackAttempt(params: {
     const turns = await listTurns(match.id);
     if (!updatedMatch) throw new Error("Failed to load updated match");
     return sanitizeMatch(updatedMatch, turns, params.childId);
+}
+
+export async function* streamAttackAttempt(params: {
+    matchId?: string;
+    childId: string;
+    attackerPrompt: string;
+}): AsyncGenerator<
+    | { type: "chunk"; content: string }
+    | { type: "complete"; match: PublicMatchView },
+    void,
+    undefined
+> {
+    const db = assertAdminDb();
+    const match = params.matchId
+        ? await getMatchById(params.matchId)
+        : await getMatchForChild(params.childId);
+    if (!match) throw new Error("No active match found");
+    if (match.attackerChildId !== params.childId) throw new Error("You are not the attacker");
+    if (match.currentPhase !== "ATTACK_PHASE") throw new Error("Not your turn to attack");
+    if (match.status === "completed" || match.currentPhase === "COMPLETED") {
+        throw new Error("Match is already complete");
+    }
+
+    await requireSectionTwoCue();
+    await requireSectionOneComplete(params.childId);
+
+    const attempt = match.attemptCount + 1;
+    const stream = streamJailbreakReply({
+        adminPrompt: match.adminPrompt,
+        developerPrompt: match.developerPrompt,
+        attackerPrompt: params.attackerPrompt,
+    });
+
+    let result: { fullText: string; tokensUsed?: number } | undefined;
+    while (true) {
+        const { value, done } = await stream.next();
+        if (done) {
+            result = value;
+            break;
+        }
+        yield { type: "chunk", content: value };
+    }
+
+    if (!result) throw new Error("No response from AI");
+
+    const verdict = await judgeJailbreakBreach({
+        breachCriteria: match.breachCriteria,
+        aiResponse: result.fullText,
+    });
+
+    const turnPayload: Omit<JailbreakTurn, "id"> = {
+        matchId: match.id,
+        attackerPrompt: params.attackerPrompt,
+        aiResponse: result.fullText,
+        breach: verdict.breach,
+        refereeReason: verdict.reason,
+        tokensUsed: result.tokensUsed,
+        createdAt: FieldValue.serverTimestamp() as unknown as JailbreakTurn["createdAt"],
+    };
+
+    const turnRef = db.collection(MATCH_COLLECTION).doc(match.id).collection("turns").doc();
+    await turnRef.set(turnPayload);
+
+    const cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
+    let currentPhase: MatchPhase = verdict.breach ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+    let status: JailbreakMatch["status"] = match.status ?? "active";
+    let attackerScore = match.attackerScore;
+    let defenderScore = match.defenderScore;
+    const attemptCount = verdict.breach ? 0 : attempt;
+
+    if (verdict.breach) {
+        attackerScore += computeAttackerReward(attempt, result.tokensUsed);
+        if (cracksCompleted >= 3) {
+            currentPhase = "COMPLETED";
+            status = "completed";
+        }
+    } else {
+        defenderScore += 50;
+    }
+
+    await db.collection(MATCH_COLLECTION).doc(match.id).update({
+        cracksCompleted,
+        currentPhase,
+        status,
+        attackerScore,
+        defenderScore,
+        attemptCount,
+        updatedAt: FieldValue.serverTimestamp(),
+        lastResponse: result.fullText,
+    });
+
+    const updatedMatch = await getMatchById(match.id);
+    const turns = await listTurns(match.id);
+    if (!updatedMatch) throw new Error("Failed to load updated match");
+
+    yield { type: "complete", match: sanitizeMatch(updatedMatch, turns, params.childId) };
 }
 
 export async function applyDefenderPatch(params: {
