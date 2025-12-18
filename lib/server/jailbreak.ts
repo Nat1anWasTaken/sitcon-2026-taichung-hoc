@@ -170,11 +170,11 @@ export async function recordAttackAttempt(params: {
     await turnRef.set(turnPayload);
 
     const cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
-    let currentPhase: MatchPhase = verdict.breach ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+    let currentPhase: MatchPhase = verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
     let status: JailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
-    const attemptCount = verdict.breach ? 0 : attempt;
+    const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
 
     if (verdict.breach) {
         attackerScore += computeAttackerReward(attempt, tokensUsed);
@@ -265,11 +265,11 @@ export async function* streamAttackAttempt(params: {
     await turnRef.set(turnPayload);
 
     const cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
-    let currentPhase: MatchPhase = verdict.breach ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+    let currentPhase: MatchPhase = verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
     let status: JailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
-    const attemptCount = verdict.breach ? 0 : attempt;
+    const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
 
     if (verdict.breach) {
         attackerScore += computeAttackerReward(attempt, result.tokensUsed);
