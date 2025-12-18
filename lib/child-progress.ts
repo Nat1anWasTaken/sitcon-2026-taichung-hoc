@@ -12,6 +12,7 @@ const SECTION_DEFAULT: Omit<SectionProgress, "updatedAt"> = {
     phase1Complete: false,
     phase2Complete: false,
     phase3Complete: false,
+    sectionComplete: false,
     lastPrompt: "",
     lastImageUrl: "",
     lastTarget: "",

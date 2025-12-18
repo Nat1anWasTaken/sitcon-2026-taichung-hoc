@@ -5,7 +5,14 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { allSections } from "@/lib/game/config";
 import { ScoreboardRow, ScoreboardSection } from "@/lib/scoreboard-types";
@@ -21,6 +28,7 @@ function formatUpdated(value?: string) {
 }
 
 function statusLabel(row: ScoreboardRow) {
+    if (row.sectionComplete) return "Completed";
     if (row.phase3Complete) return "Completed";
     if (row.phase2Complete && row.currentPhase === 3) return "Final phase";
     if (row.phase1Complete && row.currentPhase === 2) return "Phase 2";
@@ -115,8 +123,16 @@ function SectionTable({
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <Badge variant={row.phase3Complete ? "default" : "outline"}>
-                                {row.phase3Complete ? "Finished" : "In progress"}
+                            <Badge
+                                variant={
+                                    row.sectionComplete || row.phase3Complete
+                                        ? "default"
+                                        : "outline"
+                                }
+                            >
+                                {row.sectionComplete || row.phase3Complete
+                                    ? "Finished"
+                                    : "In progress"}
                             </Badge>
                             <Badge variant="outline">Phase {row.currentPhase}</Badge>
                             <Badge variant="outline">Level {row.currentLevel}</Badge>
@@ -144,7 +160,10 @@ export default function ScoreboardPage() {
     const jailbreakRows: JailbreakScoreboardRow[] = snapshot?.jailbreak.rows ?? [];
     const agentRows: AgentScoreboardRow[] = snapshot?.agent.rows ?? [];
 
-    const lastSync = snapshot?.garden?.generatedAt ?? snapshot?.jailbreak?.generatedAt ?? snapshot?.agent?.generatedAt;
+    const lastSync =
+        snapshot?.garden?.generatedAt ??
+        snapshot?.jailbreak?.generatedAt ??
+        snapshot?.agent?.generatedAt;
 
     return (
         <div className="min-h-screen bg-background px-4 py-10">
@@ -231,7 +250,8 @@ export default function ScoreboardPage() {
                                         <Swords className="h-5 w-5" /> Jailbreak Battle
                                     </CardTitle>
                                     <CardDescription>
-                                        Live attacker vs defender matches. Score favors fast breaches and solid patches.
+                                        Live attacker vs defender matches. Score favors fast
+                                        breaches and solid patches.
                                     </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
@@ -255,41 +275,64 @@ export default function ScoreboardPage() {
                                         <TableBody>
                                             {jailbreakRows.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="text-center text-sm">
+                                                    <TableCell
+                                                        colSpan={6}
+                                                        className="text-center text-sm"
+                                                    >
                                                         No matches yet.
                                                     </TableCell>
                                                 </TableRow>
                                             )}
                                             {jailbreakRows.map((row) => (
                                                 <TableRow key={row.matchId}>
-                                                    <TableCell className="font-semibold">{row.matchId.slice(0, 6)}</TableCell>
+                                                    <TableCell className="font-semibold">
+                                                        {row.matchId.slice(0, 6)}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-col gap-1 text-sm font-semibold">
-                                                            <span>Seat {row.attackerSeat ?? "—"}</span>
-                                                            <span className="text-xs text-foreground/70">
-                                                                {row.attackerName || row.attackerChildId}
+                                                            <span>
+                                                                Seat {row.attackerSeat ?? "—"}
                                                             </span>
-                                                            <Badge variant="outline">Score {row.attackerScore}</Badge>
+                                                            <span className="text-xs text-foreground/70">
+                                                                {row.attackerName ||
+                                                                    row.attackerChildId}
+                                                            </span>
+                                                            <Badge variant="outline">
+                                                                Score {row.attackerScore}
+                                                            </Badge>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-col gap-1 text-sm font-semibold">
-                                                            <span>Seat {row.defenderSeat ?? "—"}</span>
-                                                            <span className="text-xs text-foreground/70">
-                                                                {row.defenderName || row.defenderChildId}
+                                                            <span>
+                                                                Seat {row.defenderSeat ?? "—"}
                                                             </span>
-                                                            <Badge variant="outline">Score {row.defenderScore}</Badge>
+                                                            <span className="text-xs text-foreground/70">
+                                                                {row.defenderName ||
+                                                                    row.defenderChildId}
+                                                            </span>
+                                                            <Badge variant="outline">
+                                                                Score {row.defenderScore}
+                                                            </Badge>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-sm font-semibold">
                                                         {row.cracksCompleted} / 3
                                                     </TableCell>
                                                     <TableCell className="text-sm">
-                                                        <Badge variant={row.status === "completed" ? "default" : "outline"}>
+                                                        <Badge
+                                                            variant={
+                                                                row.status === "completed"
+                                                                    ? "default"
+                                                                    : "outline"
+                                                            }
+                                                        >
                                                             {row.status ?? "active"}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell className="text-sm">{formatUpdated(row.updatedAt)}</TableCell>
+                                                    <TableCell className="text-sm">
+                                                        {formatUpdated(row.updatedAt)}
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -307,7 +350,8 @@ export default function ScoreboardPage() {
                                         <Shield className="h-5 w-5" /> Agent War Room
                                     </CardTitle>
                                     <CardDescription>
-                                        Lower tokens, higher score. Only successful runs appear here.
+                                        Lower tokens, higher score. Only successful runs appear
+                                        here.
                                     </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
@@ -333,21 +377,30 @@ export default function ScoreboardPage() {
                                         <TableBody>
                                             {agentRows.length === 0 && (
                                                 <TableRow>
-                                                    <TableCell colSpan={8} className="text-center text-sm">
+                                                    <TableCell
+                                                        colSpan={8}
+                                                        className="text-center text-sm"
+                                                    >
                                                         No runs yet.
                                                     </TableCell>
                                                 </TableRow>
                                             )}
                                             {agentRows.map((row, idx) => (
-                                                <TableRow key={`${row.childId}-${row.levelId}-${idx}`}>
+                                                <TableRow
+                                                    key={`${row.childId}-${row.levelId}-${idx}`}
+                                                >
                                                     <TableCell>{idx + 1}</TableCell>
                                                     <TableCell>{row.seatNumber ?? "—"}</TableCell>
                                                     <TableCell>{row.name ?? "—"}</TableCell>
                                                     <TableCell>{row.levelId}</TableCell>
                                                     <TableCell>{row.stageType}</TableCell>
                                                     <TableCell>{row.totalTokens ?? "?"}</TableCell>
-                                                    <TableCell className="font-semibold">{row.score}</TableCell>
-                                                    <TableCell>{row.bestForLevel ? "✅" : ""}</TableCell>
+                                                    <TableCell className="font-semibold">
+                                                        {row.score}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {row.bestForLevel ? "✅" : ""}
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>

@@ -55,11 +55,7 @@ import {
     updateChildName,
 } from "@/lib/child-accounts";
 import { getDefaultSectionProgress, saveChildSectionProgress } from "@/lib/child-progress";
-import {
-    SECTION_ONE_ID,
-    SectionConfig,
-    buildSectionConfigFromRecords,
-} from "@/lib/game/config";
+import { SECTION_ONE_ID, SectionConfig, buildSectionConfigFromRecords } from "@/lib/game/config";
 import { SectionProgress } from "@/lib/game-types";
 import { ChildAccount } from "@/lib/types";
 import { useGardenContent } from "@/hooks/use-garden";
@@ -495,6 +491,7 @@ function ProgressSheet({
             await saveChildSectionProgress(child.childId, sectionId, {
                 currentLevel: payload.currentLevel,
                 currentPhase: payload.currentPhase,
+                sectionComplete: payload.sectionComplete ?? false,
                 ...phaseFlags,
             });
             setNotice({ tone: "info", text: "Progress updated." });
@@ -534,8 +531,8 @@ function ProgressSheet({
 
                     {!gardenLoading && sections.length === 0 && (
                         <div className="rounded-md border-4 border-destructive bg-secondary-background px-4 py-3 text-sm font-semibold text-destructive shadow-shadow">
-                            Error: No game content found. Please go to Garden/Levels configuration to
-                            create entries.
+                            Error: No game content found. Please go to Garden/Levels configuration
+                            to create entries.
                         </div>
                     )}
 
@@ -567,9 +564,16 @@ function ProgressSheet({
                                         <Flag className="h-4 w-4 text-foreground/70" />
                                         <CardTitle className="text-lg">{section.title}</CardTitle>
                                     </div>
-                                    <CardDescription className="text-sm">
-                                        Phase {draft.currentPhase} · Level {draft.currentLevel}{" "}
-                                        {loading ? "(loading…)" : ""}
+                                    <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
+                                        <span>
+                                            Phase {draft.currentPhase} · Level {draft.currentLevel}{" "}
+                                            {loading ? "(loading…)" : ""}
+                                        </span>
+                                        {draft.sectionComplete && (
+                                            <Badge variant="default" className="border-2">
+                                                Section complete
+                                            </Badge>
+                                        )}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -664,6 +668,29 @@ function ProgressSheet({
                                                     </div>
                                                 );
                                             })}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 rounded-md border-2 border-border bg-secondary-background p-3 shadow-shadow">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-semibold">
+                                                    Mark section as complete
+                                                </p>
+                                                <p className="text-xs text-foreground/70">
+                                                    Locks Section 1 for this child and signals
+                                                    readiness for the next section.
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={!!draft.sectionComplete}
+                                                onCheckedChange={(checked) =>
+                                                    updateDraft(section.id, (curr) => ({
+                                                        ...curr,
+                                                        sectionComplete: checked,
+                                                    }))
+                                                }
+                                            />
                                         </div>
                                     </div>
 

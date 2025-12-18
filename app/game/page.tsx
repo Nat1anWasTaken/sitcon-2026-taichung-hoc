@@ -1,5 +1,5 @@
-import { SectionOneGame } from "@/components/game/section-one";
+import { GameHub } from "@/components/game/hub";
 
 export default function GamePage() {
-    return <SectionOneGame />;
+    return <GameHub />;
 }

@@ -18,6 +18,7 @@ type ProgressDoc = {
     phase1Complete?: boolean;
     phase2Complete?: boolean;
     phase3Complete?: boolean;
+    sectionComplete?: boolean;
     lastPrompt?: string;
     lastImageUrl?: string;
     lastTarget?: string;
@@ -36,6 +37,7 @@ function coerceProgress(sectionId: string, data?: ProgressDoc): Required<Progres
         phase1Complete: data?.phase1Complete ?? false,
         phase2Complete: data?.phase2Complete ?? false,
         phase3Complete: data?.phase3Complete ?? false,
+        sectionComplete: data?.sectionComplete ?? false,
         lastPrompt: data?.lastPrompt ?? "",
         lastImageUrl: data?.lastImageUrl ?? "",
         lastTarget: data?.lastTarget ?? "",
@@ -85,6 +87,7 @@ export async function buildScoreboardSnapshot(): Promise<ScoreboardSnapshot> {
                         phase1Complete: progress.phase1Complete ?? false,
                         phase2Complete: progress.phase2Complete ?? false,
                         phase3Complete: progress.phase3Complete ?? false,
+                        sectionComplete: progress.sectionComplete ?? false,
                         updatedAt,
                     } satisfies ScoreboardRow;
                 })

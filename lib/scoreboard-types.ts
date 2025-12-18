@@ -10,6 +10,7 @@ export type ScoreboardRow = {
     phase1Complete: boolean;
     phase2Complete: boolean;
     phase3Complete: boolean;
+    sectionComplete?: boolean;
     updatedAt: string; // ISO string
 };
 

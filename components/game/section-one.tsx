@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Rabbit, Sparkles, Wand2, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Rabbit, Sparkles, Wand2, Trash2, Lock, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
     DndContext,
@@ -34,7 +34,11 @@ type ChildSession = {
 
 const SECTION_ID = SECTION_ONE_ID;
 
-export function SectionOneGame() {
+type SectionOneProps = {
+    onSectionComplete?: () => void;
+};
+
+export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     const router = useRouter();
     const [session, setSession] = useState<ChildSession | null>(null);
     const [progress, setProgress] = useState<SectionProgress | null>(null);
@@ -44,6 +48,7 @@ export function SectionOneGame() {
     const [cues, setCues] = useState<GameCue[]>([]);
     const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
     const [typedPrompt, setTypedPrompt] = useState("");
+    const lastServerPromptRef = useRef<string | null>(null);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [resultOverlay, setResultOverlay] = useState<{
@@ -52,6 +57,7 @@ export function SectionOneGame() {
         feedback: string | null;
         imageUrl: string | null;
     }>({ open: false, match: null, feedback: null, imageUrl: null });
+    const completedNotifiedRef = useRef(false);
 
     useEffect(() => {
         let active = true;
@@ -88,7 +94,12 @@ export function SectionOneGame() {
             if (progRes.ok) {
                 const progData = await progRes.json();
                 setProgress(progData.progress);
-                setTypedPrompt(progData.progress?.lastPrompt ?? "");
+                const serverPrompt = progData.progress?.lastPrompt ?? "";
+                // Only apply server prompt when it actually changed to avoid clobbering local edits
+                if (serverPrompt !== lastServerPromptRef.current) {
+                    setTypedPrompt(serverPrompt);
+                    lastServerPromptRef.current = serverPrompt;
+                }
                 setImageUrl(progData.progress?.lastImageUrl ?? null);
             }
 
@@ -129,7 +140,10 @@ export function SectionOneGame() {
 
     const phaseConfig = useMemo(() => {
         if (!progress || !config?.phases.length) return null;
-        const phaseIndex = Math.min(Math.max(progress.currentPhase - 1, 0), config.phases.length - 1);
+        const phaseIndex = Math.min(
+            Math.max(progress.currentPhase - 1, 0),
+            config.phases.length - 1
+        );
         return config.phases[phaseIndex];
     }, [config?.phases, progress]);
 
@@ -158,9 +172,38 @@ export function SectionOneGame() {
     const lockedByCue = lockedCueId ? !cues.some((c) => c.id === lockedCueId && c.active) : false;
     const phase3Locked =
         progress?.currentPhase === 3
-            ? progress?.phase1Complete === false || progress?.phase2Complete === false || lockedByCue
+            ? progress?.phase1Complete === false ||
+              progress?.phase2Complete === false ||
+              lockedByCue
             : lockedByCue;
     const isPhaseLocked = progress?.currentPhase === 3 ? phase3Locked : lockedByCue;
+    const isSectionComplete = progress?.sectionComplete ?? false;
+    const lockReason = useMemo(() => {
+        if (!isPhaseLocked || !phaseConfig) return null;
+        if (phase3Locked && progress?.currentPhase === 3) {
+            if (progress?.phase1Complete === false || progress?.phase2Complete === false) {
+                return "Finish the earlier phases first, then the admin will unlock the finale.";
+            }
+            return "Waiting for the admin cue to start the final phase.";
+        }
+        if (lockedByCue) return "An admin cue is needed to begin this phase.";
+        return "This phase is locked right now.";
+    }, [
+        isPhaseLocked,
+        phase3Locked,
+        lockedByCue,
+        phaseConfig,
+        progress?.currentPhase,
+        progress?.phase1Complete,
+        progress?.phase2Complete,
+    ]);
+
+    useEffect(() => {
+        if (isSectionComplete && !completedNotifiedRef.current) {
+            completedNotifiedRef.current = true;
+            onSectionComplete?.();
+        }
+    }, [isSectionComplete, onSectionComplete]);
 
     const shuffledBlocks = useMemo(() => {
         if (!mergedLevelConfig?.blocks) return [];
@@ -181,6 +224,15 @@ export function SectionOneGame() {
 
     const handleGenerate = async () => {
         if (!phaseConfig || !mergedLevelConfig) return;
+        if (isSectionComplete) {
+            setResultOverlay({
+                open: true,
+                match: false,
+                feedback: "This section is complete. Wait for the next one to start.",
+                imageUrl,
+            });
+            return;
+        }
         const prompt =
             phaseConfig.mode === "blocks" ? selectedBlocks.join(" ").trim() : typedPrompt.trim();
 
@@ -253,6 +305,8 @@ export function SectionOneGame() {
 
     return (
         <div className="min-h-screen bg-background px-4 py-8">
+            <SectionCompleteOverlay open={isSectionComplete} />
+            {!isSectionComplete && <LockedOverlay open={!!lockReason} message={lockReason ?? ""} />}
             <div className="mx-auto flex max-w-6xl flex-col gap-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
@@ -266,7 +320,8 @@ export function SectionOneGame() {
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <Sparkles className="h-4 w-4" />
-                        {config?.title ?? "Garden Builders"}: {phaseConfig.title} · Level {progress.currentLevel}
+                        {config?.title ?? "Garden Builders"}: {phaseConfig.title} · Level{" "}
+                        {progress.currentLevel}
                     </div>
                 </header>
 
@@ -275,10 +330,15 @@ export function SectionOneGame() {
                         <div>
                             <CardTitle>{mergedLevelConfig.target}</CardTitle>
                             <CardDescription>
-                                {phaseConfig.description ?? "Build a prompt to match the target image."}
+                                {phaseConfig.description ??
+                                    "Build a prompt to match the target image."}
                             </CardDescription>
                         </div>
-                        <BadgeChip>Phase {progress.currentPhase} of {config?.phases.length ?? 3}</BadgeChip>
+                        <BadgeChip>
+                            {isSectionComplete
+                                ? "Section complete"
+                                : `Phase ${progress.currentPhase} of ${config?.phases.length ?? 3}`}
+                        </BadgeChip>
                     </CardHeader>
                     <CardContent className="grid gap-6 lg:grid-cols-2">
                         <div className="space-y-4">
@@ -292,11 +352,14 @@ export function SectionOneGame() {
                                 <TextPromptInput
                                     value={typedPrompt}
                                     onChange={setTypedPrompt}
-                                    disabled={isPhaseLocked}
+                                    disabled={isPhaseLocked || isSectionComplete}
                                 />
                             )}
                             <div className="flex flex-wrap items-center gap-3">
-                                <Button onClick={handleGenerate} disabled={loading || isPhaseLocked}>
+                                <Button
+                                    onClick={handleGenerate}
+                                    disabled={loading || isPhaseLocked || isSectionComplete}
+                                >
                                     {loading ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -318,7 +381,9 @@ export function SectionOneGame() {
                         </div>
 
                         <div className="space-y-3">
-                            <Label className="text-sm uppercase text-foreground/60">Latest image</Label>
+                            <Label className="text-sm uppercase text-foreground/60">
+                                Latest image
+                            </Label>
                             <div className="aspect-square w-full overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
                                 {imageUrl ? (
                                     // eslint-disable-next-line @next/next/no-img-element
@@ -333,7 +398,11 @@ export function SectionOneGame() {
                                     </div>
                                 )}
                             </div>
-                            <TargetProgress progress={progress} phase3Locked={phase3Locked} />
+                            <TargetProgress
+                                progress={progress}
+                                phase3Locked={phase3Locked}
+                                sectionComplete={isSectionComplete}
+                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -344,6 +413,57 @@ export function SectionOneGame() {
                     imageUrl={resultOverlay.imageUrl ?? imageUrl}
                     onClose={() => setResultOverlay((prev) => ({ ...prev, open: false }))}
                 />
+            </div>
+        </div>
+    );
+}
+
+function LockedOverlay({ open, message }: { open: boolean; message: string }) {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm">
+            <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4">
+                <div className="relative w-full rounded-2xl border-4 border-foreground bg-secondary-background p-6 shadow-shadow">
+                    <div className="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full border-4 border-foreground bg-main px-4 py-1 text-xs font-semibold shadow-shadow">
+                        <Lock className="h-4 w-4" />
+                        Phase Locked
+                    </div>
+                    <div className="space-y-3 text-center">
+                        <p className="text-xl font-black text-foreground">Hold tight!</p>
+                        <p className="text-base font-semibold text-foreground/80">{message}</p>
+                        <p className="text-sm font-semibold text-foreground/60">
+                            We&apos;ll let you know as soon as this phase opens. Keep this tab open.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SectionCompleteOverlay({ open }: { open: boolean }) {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm">
+            <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4">
+                <div className="relative w-full rounded-2xl border-4 border-foreground bg-main p-7 shadow-shadow">
+                    <div className="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full border-4 border-foreground bg-secondary-background px-4 py-1 text-xs font-semibold shadow-shadow">
+                        <Trophy className="h-4 w-4" />
+                        Section Complete
+                    </div>
+                    <div className="space-y-4 text-center">
+                        <p className="text-2xl font-black text-foreground">
+                            You cleared Garden Builders!
+                        </p>
+                        <p className="text-base font-semibold text-foreground/80">
+                            Nice work. We&apos;re loading the next section soon—keep this tab open
+                            and watch for instructions from your coach.
+                        </p>
+                        <p className="text-sm font-semibold text-foreground/60">
+                            Tip: you can still view your last image below, but generating is paused.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -656,7 +776,9 @@ function ResultOverlay({
                 <div className="grid gap-4 sm:grid-cols-[2fr,1fr] sm:items-center">
                     <div className="space-y-3">
                         <div className="text-2xl font-bold">
-                            {success ? "Great job! Next level unlocked." : "Not quite—tweak your prompt."}
+                            {success
+                                ? "Great job! Next level unlocked."
+                                : "Not quite—tweak your prompt."}
                         </div>
                         <p className="text-base font-semibold text-foreground/80">
                             {feedback ?? (success ? "Looks good!" : "Give it another go.")}
@@ -670,7 +792,11 @@ function ResultOverlay({
                     <div className="overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
                         {imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={imageUrl} alt="Latest generated" className="h-full w-full object-cover" />
+                            <img
+                                src={imageUrl}
+                                alt="Latest generated"
+                                className="h-full w-full object-cover"
+                            />
                         ) : (
                             <div className="flex h-full min-h-[180px] items-center justify-center text-sm font-semibold text-foreground/60">
                                 No preview
@@ -710,14 +836,20 @@ function TextPromptInput({
 function TargetProgress({
     progress,
     phase3Locked,
+    sectionComplete,
 }: {
     progress: SectionProgress;
     phase3Locked: boolean;
+    sectionComplete: boolean;
 }) {
     const phaseBadges = [
         { label: "Phase 1", done: !!progress.phase1Complete },
         { label: "Phase 2", done: !!progress.phase2Complete },
-        { label: "Phase 3", done: !!progress.phase3Complete, locked: phase3Locked },
+        {
+            label: "Phase 3",
+            done: !!progress.phase3Complete || sectionComplete,
+            locked: phase3Locked,
+        },
     ];
 
     return (

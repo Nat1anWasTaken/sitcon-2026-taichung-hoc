@@ -29,8 +29,16 @@ export async function POST(req: NextRequest) {
     const { config } = await fetchSectionOneConfig();
     const progress = await getSectionProgress(session.childId, sectionId);
 
-    const activePhase = config.phases[Math.min(progress.currentPhase - 1, config.phases.length - 1)];
-    const activeLevel = activePhase?.levels[Math.min(progress.currentLevel - 1, (activePhase?.levels.length ?? 1) - 1)];
+    if (progress.sectionComplete) {
+        return NextResponse.json({ error: "Section already complete" }, { status: 400 });
+    }
+
+    const activePhase =
+        config.phases[Math.min(progress.currentPhase - 1, config.phases.length - 1)];
+    const activeLevel =
+        activePhase?.levels[
+            Math.min(progress.currentLevel - 1, (activePhase?.levels.length ?? 1) - 1)
+        ];
 
     if (!activePhase || !activeLevel) {
         return NextResponse.json({ error: "No level configured" }, { status: 400 });
@@ -49,10 +57,12 @@ export async function POST(req: NextRequest) {
     let phase1Complete = progress.phase1Complete ?? false;
     let phase2Complete = progress.phase2Complete ?? false;
     let phase3Complete = progress.phase3Complete ?? false;
+    let sectionComplete = progress.sectionComplete ?? false;
 
     if (evaluation.match) {
         const phaseLevels = activePhase.levels.length;
         const isLastLevel = nextLevel >= phaseLevels;
+        const isLastPhase = nextPhase >= config.phases.length;
 
         if (!isLastLevel) {
             nextLevel += 1;
@@ -61,22 +71,28 @@ export async function POST(req: NextRequest) {
             if (nextPhase === 2) phase2Complete = true;
             if (nextPhase === 3) phase3Complete = true;
 
-            const candidatePhase = Math.min(nextPhase + 1, config.phases.length as number);
-            const candidateConfig = config.phases[candidatePhase - 1];
-            if (candidateConfig) {
-                if (candidateConfig.lockedByCue) {
-                    const cue = await getCue(candidateConfig.lockedByCue);
-                    const unlocked = !!cue?.active;
-                    if (unlocked) {
+            if (isLastPhase) {
+                // Stay on the final level/phase and mark section as complete.
+                sectionComplete = true;
+                nextLevel = phaseLevels;
+            } else {
+                const candidatePhase = Math.min(nextPhase + 1, config.phases.length as number);
+                const candidateConfig = config.phases[candidatePhase - 1];
+                if (candidateConfig) {
+                    if (candidateConfig.lockedByCue) {
+                        const cue = await getCue(candidateConfig.lockedByCue);
+                        const unlocked = !!cue?.active;
+                        if (unlocked) {
+                            nextPhase = asPhaseId(candidatePhase);
+                            nextLevel = 1;
+                        } else {
+                            nextPhase = progress.currentPhase;
+                            nextLevel = phaseLevels; // stay on last level until unlocked
+                        }
+                    } else {
                         nextPhase = asPhaseId(candidatePhase);
                         nextLevel = 1;
-                    } else {
-                        nextPhase = progress.currentPhase;
-                        nextLevel = phaseLevels; // stay on last level until unlocked
                     }
-                } else {
-                    nextPhase = asPhaseId(candidatePhase);
-                    nextLevel = 1;
                 }
             }
         }
@@ -89,6 +105,7 @@ export async function POST(req: NextRequest) {
         phase1Complete,
         phase2Complete,
         phase3Complete,
+        sectionComplete,
         lastPrompt: prompt,
         lastImageUrl: imageUrl,
         lastTarget: target,

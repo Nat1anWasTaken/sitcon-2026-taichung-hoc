@@ -9,6 +9,7 @@ export type SectionProgress = {
     phase1Complete?: boolean;
     phase2Complete?: boolean;
     phase3Complete?: boolean;
+    sectionComplete?: boolean;
     lastPrompt?: string;
     lastImageUrl?: string;
     lastTarget?: string;

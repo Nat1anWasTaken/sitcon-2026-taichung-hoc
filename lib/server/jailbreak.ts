@@ -4,12 +4,7 @@ import { generateJailbreakReply, judgeJailbreakBreach } from "@/lib/ai";
 import { adminFirestore } from "../firebase-admin";
 import { getCue } from "./cues";
 import { getSectionProgress } from "./progress";
-import {
-    JailbreakMatch,
-    JailbreakTurn,
-    MatchPhase,
-    PublicMatchView,
-} from "../jailbreak-types";
+import { JailbreakMatch, JailbreakTurn, MatchPhase, PublicMatchView } from "../jailbreak-types";
 
 function assertAdminDb() {
     if (!adminFirestore) throw new Error("Admin Firestore not initialized");
@@ -28,7 +23,7 @@ export async function requireSectionTwoCue() {
 
 export async function requireSectionOneComplete(childId: string) {
     const progress = await getSectionProgress(childId, SECTION_ONE_ID);
-    const done = progress.phase3Complete === true;
+    const done = progress.sectionComplete === true || progress.phase3Complete === true;
     if (!done) {
         throw new Error("Complete Section 1 first.");
     }
@@ -138,8 +133,9 @@ export async function recordAttackAttempt(params: {
     attackerPrompt: string;
 }): Promise<PublicMatchView> {
     const db = assertAdminDb();
-    const match =
-        params.matchId ? await getMatchById(params.matchId) : await getMatchForChild(params.childId);
+    const match = params.matchId
+        ? await getMatchById(params.matchId)
+        : await getMatchForChild(params.childId);
     if (!match) throw new Error("No active match found");
     if (match.attackerChildId !== params.childId) throw new Error("You are not the attacker");
     if (match.currentPhase !== "ATTACK_PHASE") throw new Error("Not your turn to attack");
@@ -211,8 +207,9 @@ export async function applyDefenderPatch(params: {
     developerPrompt: string;
 }): Promise<PublicMatchView> {
     const db = assertAdminDb();
-    const match =
-        params.matchId ? await getMatchById(params.matchId) : await getMatchForChild(params.childId);
+    const match = params.matchId
+        ? await getMatchById(params.matchId)
+        : await getMatchForChild(params.childId);
     if (!match) throw new Error("No active match found");
     if (match.defenderChildId !== params.childId) throw new Error("You are not the defender");
     if (match.currentPhase !== "DEFENDER_PATCH") {
