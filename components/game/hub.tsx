@@ -84,7 +84,7 @@ export function GameHub() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background">
+            <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background px-4">
                 <div className="inline-flex items-center gap-2 rounded-md border-4 border-foreground bg-secondary-background px-4 py-2 font-semibold shadow-shadow">
                     <Loader2 className="h-4 w-4 animate-spin" /> Loading game…
                 </div>
@@ -93,51 +93,26 @@ export function GameHub() {
     }
 
     return (
-        <div className="min-h-screen bg-background px-4 py-8">
+        <div className="flex min-h-screen flex-col bg-background px-4 py-8">
             <Card className="mb-6 border-4 border-foreground shadow-shadow">
                 <CardContent className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm font-semibold">
                     <Badge variant="outline" className="border-2">
                         {stageLabel}
                     </Badge>
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-tight text-foreground/70">
-                        {stage === "section-1" ? (
-                            <>
-                                <WandSparkles className="h-4 w-4" />
-                                Complete Section 1 to unlock the next battle.
-                            </>
-                        ) : (
-                            <>
-                                <Sword className="h-4 w-4" />
-                                Section 2 unlocked by admin cue.
-                            </>
-                        )}
-                    </div>
-                    <div className="flex-1" />
-                    <Badge variant={sectionComplete ? "default" : "outline"} className="border-2">
-                        {sectionComplete ? "Section 1 done" : "Section 1 in progress"}
-                    </Badge>
-                    <Badge variant={startSection2 ? "default" : "outline"} className="border-2">
-                        {startSection2 ? "Section 2 open" : "Awaiting Section 2 cue"}
-                    </Badge>
-                    <Badge
-                        variant={sectionTwoComplete ? "default" : "outline"}
-                        className="border-2"
-                    >
-                        {sectionTwoComplete ? "Section 2 done" : "Section 2 in progress"}
-                    </Badge>
-                    <Badge variant={sectionThreeOpen ? "default" : "outline"} className="border-2">
-                        {sectionThreeOpen ? "Section 3 open" : "Awaiting Agent cue"}
-                    </Badge>
                 </CardContent>
             </Card>
 
-            {stage === "section-1" ? (
-                <SectionOneGame onSectionComplete={() => setSectionComplete(true)} />
-            ) : stage === "section-2" ? (
-                <JailbreakBattle />
-            ) : (
-                <AgentWarRoom />
-            )}
+            <div className="flex flex-1">
+                {stage === "section-1" ? (
+                    <SectionOneGame onSectionComplete={() => setSectionComplete(true)} />
+                ) : stage === "section-2" ? (
+                    <div className="flex-1">
+                        <JailbreakBattle />
+                    </div>
+                ) : (
+                    <AgentWarRoom />
+                )}
+            </div>
         </div>
     );
 }

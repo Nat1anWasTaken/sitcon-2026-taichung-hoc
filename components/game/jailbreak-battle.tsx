@@ -42,8 +42,14 @@ export function JailbreakBattle() {
     const [developerDraft, setDeveloperDraft] = useState("");
     const [busy, setBusy] = useState(false);
 
-    const fetchMatch = async () => {
-        setMatchState((s) => ({ ...s, loading: true }));
+    const fetchMatch = async (showSpinner = false) => {
+        // Only flip the full-screen loading state on the first load or when explicitly asked.
+        setMatchState((s) => {
+            if (showSpinner || (!s.data && !s.error)) {
+                return { ...s, loading: true };
+            }
+            return s;
+        });
         const res = await fetch("/api/jailbreak/match", { credentials: "include" });
         if (!res.ok) {
             const data = await res.json();
@@ -80,8 +86,8 @@ export function JailbreakBattle() {
 
     useEffect(() => {
         if (!session) return;
-        fetchMatch();
-        const id = setInterval(fetchMatch, 2000);
+        fetchMatch(true);
+        const id = setInterval(() => fetchMatch(false), 2000);
         return () => clearInterval(id);
     }, [session]);
 
@@ -150,9 +156,11 @@ export function JailbreakBattle() {
         );
     }, [session]);
 
+    const viewportHeightClass = "min-h-full";
+
     if (!session) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background">
+            <div className={`flex ${viewportHeightClass} items-center justify-center bg-background`}>
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
                     Connecting…
                 </div>
@@ -162,7 +170,7 @@ export function JailbreakBattle() {
 
     if (matchState.loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background">
+            <div className={`flex ${viewportHeightClass} items-center justify-center bg-background`}>
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
                     Loading your battle…
                 </div>
@@ -172,7 +180,7 @@ export function JailbreakBattle() {
 
     if (!matchState.data) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background px-4">
+            <div className={`flex ${viewportHeightClass} items-center justify-center bg-background px-4`}>
                 <Card className="w-full max-w-xl">
                     <CardHeader className="flex items-center justify-between">
                         <CardTitle>No match assigned</CardTitle>
@@ -203,8 +211,8 @@ export function JailbreakBattle() {
     const match = matchState.data;
 
     return (
-        <div className="min-h-screen bg-background px-4 py-8">
-            <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <div className="min-h-full bg-background px-4 py-8">
+            <div className="mx-auto flex min-h-full max-w-6xl flex-col gap-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-3">
                         <Button

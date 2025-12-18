@@ -147,12 +147,6 @@ export function AgentWarRoom() {
                         </div>
                     )}
                     {error && <div className="text-sm text-destructive">{error}</div>}
-                    {waitingCue && (
-                        <div className="flex items-center gap-2 rounded-md border-4 border-foreground bg-yellow-100 px-3 py-2 text-sm font-semibold">
-                            <ShieldAlert className="h-4 w-4" />
-                            等待講師 Cue：{waitingCue}
-                        </div>
-                    )}
                     {currentLevel && (
                         <div className="space-y-2">
                             <div className="text-lg font-semibold">{currentLevel.briefing}</div>
