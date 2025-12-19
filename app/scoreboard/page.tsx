@@ -14,10 +14,10 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sectionPhaseLabel, useScoreboard } from "@/hooks/use-scoreboard";
 import { allSections } from "@/lib/game/config";
-import { ScoreboardRow, ScoreboardSection } from "@/lib/scoreboard-types";
 import { JailbreakScoreboardRow } from "@/lib/jailbreak-scoreboard-types";
-import { useScoreboard, sectionPhaseLabel } from "@/hooks/use-scoreboard";
+import { ScoreboardRow, ScoreboardSection } from "@/lib/scoreboard-types";
 
 function formatUpdated(value?: string) {
     if (!value) return "—";
@@ -158,9 +158,7 @@ export default function ScoreboardPage() {
 
     const jailbreakRows: JailbreakScoreboardRow[] = snapshot?.jailbreak.rows ?? [];
 
-    const lastSync =
-        snapshot?.garden?.generatedAt ??
-        snapshot?.jailbreak?.generatedAt;
+    const lastSync = snapshot?.garden?.generatedAt ?? snapshot?.jailbreak?.generatedAt;
 
     return (
         <div className="min-h-screen bg-background px-4 py-10">
@@ -168,16 +166,15 @@ export default function ScoreboardPage() {
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                         <p className="text-xs uppercase tracking-tight text-foreground/60">
-                            Public view
+                            公開檢視
                         </p>
-                        <h1 className="text-3xl font-bold leading-tight">Live Scoreboard</h1>
+                        <h1 className="text-3xl font-bold leading-tight">即時計分板</h1>
                         <p className="max-w-2xl text-sm text-foreground/70">
-                            Watch each seat advance through every section and phase. Updates stream
-                            in real time—no refresh needed.
+                            觀看每個座位在各單元與階段的進度。更新會即時串流—無需重新整理。
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <LivePill label="Live" />
+                        <LivePill label="實況" />
                         {lastSync && (
                             <span className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-xs font-semibold shadow-shadow">
                                 Last sync {formatUpdated(lastSync)}
@@ -185,7 +182,7 @@ export default function ScoreboardPage() {
                         )}
                         {loading && (
                             <span className="inline-flex items-center gap-2 rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-xs font-semibold shadow-shadow">
-                                <RefreshCw className="h-4 w-4 animate-spin" /> Connecting…
+                                <RefreshCw className="h-4 w-4 animate-spin" /> 連線中…
                             </span>
                         )}
                     </div>
@@ -199,8 +196,8 @@ export default function ScoreboardPage() {
 
                 <Tabs defaultValue="garden" className="w-full">
                     <TabsList className="flex w-full flex-wrap gap-2 bg-secondary-background">
-                        <TabsTrigger value="garden">Section 1 · Garden Builders</TabsTrigger>
-                        <TabsTrigger value="jailbreak">Section 2 · Jailbreak Battle</TabsTrigger>
+                        <TabsTrigger value="garden">第 1 部分 · 花園創建者</TabsTrigger>
+                        <TabsTrigger value="jailbreak">第 2 部分 · 文字攻防對戰</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="garden" className="space-y-4">
@@ -210,12 +207,12 @@ export default function ScoreboardPage() {
                                     <div>
                                         <CardTitle>{section.title}</CardTitle>
                                         <CardDescription>
-                                            Track every seat across {section.phases} phases.
+                                            追蹤每個座位在所有階段的進度，共 {section.phases} 階段。
                                         </CardDescription>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
                                         <RadioTower className="h-4 w-4" />
-                                        Live updates every few seconds
+                                        即時更新，每幾秒刷新一次
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -243,16 +240,15 @@ export default function ScoreboardPage() {
                             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
-                                        <Swords className="h-5 w-5" /> Jailbreak Battle
+                                        <Swords className="h-5 w-5" /> 文字攻防對戰
                                     </CardTitle>
                                     <CardDescription>
-                                        Live attacker vs defender matches. Score favors fast
-                                        breaches and solid patches.
+                                        即時的攻方 vs 守方對戰。得分會偏重於快速的入侵和穩定的修補。
                                     </CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
                                     <Zap className="h-4 w-4" />
-                                    Auto-refreshing feed
+                                    自動重新整理串流
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -260,12 +256,12 @@ export default function ScoreboardPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Match</TableHead>
-                                                <TableHead>Attacker</TableHead>
-                                                <TableHead>Defender</TableHead>
-                                                <TableHead>Cracks</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead>Updated</TableHead>
+                                                <TableHead>對戰</TableHead>
+                                                <TableHead>攻擊者</TableHead>
+                                                <TableHead>防守者</TableHead>
+                                                <TableHead>破解數</TableHead>
+                                                <TableHead>狀態</TableHead>
+                                                <TableHead>更新時間</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -275,7 +271,7 @@ export default function ScoreboardPage() {
                                                         colSpan={6}
                                                         className="text-center text-sm"
                                                     >
-                                                        No matches yet.
+                                                        尚無對戰。
                                                     </TableCell>
                                                 </TableRow>
                                             )}

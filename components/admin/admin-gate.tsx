@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { Loader2, ShieldCheck, UserCircle2 } from "lucide-react";
 import type { User } from "firebase/auth";
+import { Loader2, ShieldCheck, UserCircle2 } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +50,7 @@ export function AdminGate({ children }: Props) {
             <div className="flex min-h-screen items-center justify-center bg-background">
                 <div className="flex items-center gap-3 rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 shadow-shadow">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <span className="text-sm font-semibold">Checking admin session…</span>
+                    <span className="text-sm font-semibold">檢查管理員會話…</span>
                 </div>
             </div>
         );
@@ -63,20 +63,18 @@ export function AdminGate({ children }: Props) {
                     <CardHeader>
                         <div className="mb-3 inline-flex items-center gap-3 rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
                             <ShieldCheck className="h-5 w-5" />
-                            Admin Portal
+                            管理入口
                         </div>
                         <CardTitle className="flex items-center gap-2">
                             <UserCircle2 className="h-5 w-5" />
-                            Admin sign-in
+                            管理員登入
                         </CardTitle>
-                        <CardDescription>
-                            Use the email/password from Firebase console.
-                        </CardDescription>
+                        <CardDescription>請使用 Firebase 控制台中的電子郵件/密碼。</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">電子郵件</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -87,7 +85,7 @@ export function AdminGate({ children }: Props) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">密碼</Label>
                                 <Input
                                     id="password"
                                     type="password"
@@ -106,10 +104,10 @@ export function AdminGate({ children }: Props) {
                                 {loading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Signing in…
+                                        登入中…
                                     </>
                                 ) : (
-                                    "Sign in"
+                                    "登入"
                                 )}
                             </Button>
                         </form>

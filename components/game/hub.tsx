@@ -3,10 +3,10 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { JailbreakBattle } from "@/components/game/jailbreak-battle";
+import { SectionOneGame } from "@/components/game/section-one";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { SectionOneGame } from "@/components/game/section-one";
-import { JailbreakBattle } from "@/components/game/jailbreak-battle";
 
 type Stage = "section-1" | "section-2";
 
@@ -67,15 +67,15 @@ export function GameHub() {
     }, [sectionComplete, startSection2]);
 
     const stageLabel = useMemo(() => {
-        if (stage === "section-2") return "Section 2 · Jailbreak Battle";
-        return "Section 1 · Garden Builders";
+        if (stage === "section-2") return "第二單元 · 文字攻防對戰";
+        return "第一單元 · 花園創建者";
     }, [stage]);
 
     if (loading) {
         return (
             <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background px-4">
                 <div className="inline-flex items-center gap-2 rounded-md border-4 border-foreground bg-secondary-background px-4 py-2 font-semibold shadow-shadow">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Loading game…
+                    <Loader2 className="h-4 w-4 animate-spin" /> 載入遊戲…
                 </div>
             </div>
         );

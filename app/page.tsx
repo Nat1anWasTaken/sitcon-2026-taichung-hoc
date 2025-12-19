@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
 import { Loader2, Rabbit } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,14 +46,14 @@ export default function Home() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Rabbit className="h-5 w-5" />
-                        Child login
+                        學生登入
                     </CardTitle>
-                    <CardDescription>Seat badge ID + password to enter the game.</CardDescription>
+                    <CardDescription>以座位徽章 ID 與密碼進入遊戲。</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         <div className="space-y-2">
-                            <Label htmlFor="childId">Child ID</Label>
+                            <Label htmlFor="childId">座位 ID</Label>
                             <Input
                                 id="childId"
                                 required
@@ -63,7 +63,7 @@ export default function Home() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">密碼</Label>
                             <Input
                                 id="password"
                                 type="password"
@@ -82,10 +82,10 @@ export default function Home() {
                             {loading ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    Checking…
+                                    檢查中…
                                 </>
                             ) : (
-                                "Start playing"
+                                "開始遊玩"
                             )}
                         </Button>
                     </form>

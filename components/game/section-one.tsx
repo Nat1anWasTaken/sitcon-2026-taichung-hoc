@@ -1,31 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Rabbit, Sparkles, Wand2, Trash2, Lock, Trophy } from "lucide-react";
-import { useRouter } from "next/navigation";
 import {
+    closestCenter,
     DndContext,
     DragEndEvent,
-    DragStartEvent,
     DragOverEvent,
+    DragOverlay,
+    DragStartEvent,
     useDraggable,
     useDroppable,
-    closestCenter,
-    DragOverlay,
 } from "@dnd-kit/core";
-import {
-    SortableContext,
-    useSortable,
-    arrayMove,
-    rectSortingStrategy,
-} from "@dnd-kit/sortable";
+import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Loader2, Lock, Rabbit, Sparkles, Trash2, Trophy, Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { SECTION_ONE_ID, SectionConfig } from "@/lib/game/config";
 import { GameCue, SectionProgress } from "@/lib/game-types";
+import { SECTION_ONE_ID, SectionConfig } from "@/lib/game/config";
 
 type ChildSession = {
     childId: string;
@@ -188,7 +183,11 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     const isPhaseLocked = useMemo(() => {
         if (!progress) return false;
         if (progress.currentPhase === 3) {
-            return progress.phase1Complete === false || progress.phase2Complete === false || isLockedByCue;
+            return (
+                progress.phase1Complete === false ||
+                progress.phase2Complete === false ||
+                isLockedByCue
+            );
         }
         if (progress.currentPhase === 2) {
             return progress.phase1Complete === false || isLockedByCue;
@@ -201,19 +200,19 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
 
         if (progress.currentPhase === 3) {
             if (progress.phase1Complete === false || progress.phase2Complete === false) {
-                return "Finish the earlier phases first, then the coach will unlock the final quest.";
+                return "請先完成前面的階段，教練會解鎖最終任務。";
             }
-            return "Your coach hasn't started the final quest yet. Keep this tab open!";
+            return "你的教練尚未啟動最終任務。請保持此分頁開啟！";
         }
 
         if (progress.currentPhase === 2) {
             if (progress.phase1Complete === false) {
-                return "Finish Phase 1 first to unlock the next challenge.";
+                return "請先完成第一階段以解鎖下一挑戰。";
             }
-            return "Your coach hasn't started Phase 2 yet. Get ready to type your own prompts!";
+            return "你的教練尚未啟動第二階段。準備輸入你的提示吧！";
         }
 
-        return "This phase is locked by your coach. Wait for instructions!";
+        return "此階段已被教練鎖定。請等待指示！";
     }, [isPhaseLocked, progress]);
 
     const isSectionComplete = progress?.sectionComplete ?? false;
@@ -276,7 +275,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
             setResultOverlay({
                 open: true,
                 match: false,
-                feedback: "This section is complete. Wait for the next one to start.",
+                feedback: "本單元已完成。請等候下一單元開始。",
                 imageUrl,
             });
             return;
@@ -288,7 +287,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
             setResultOverlay({
                 open: true,
                 match: false,
-                feedback: "Add some words first!",
+                feedback: "請先輸入一些文字！",
                 imageUrl,
             });
             return;
@@ -303,7 +302,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                 credentials: "include",
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Generation failed");
+            if (!res.ok) throw new Error(data.error || "生成失敗");
 
             setImageUrl(data.imageUrl);
             setProgress(data.progress);
@@ -319,7 +318,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                 setTypedPrompt(prompt);
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Something went wrong";
+            const message = err instanceof Error ? err.message : "發生錯誤";
             setResultOverlay({
                 open: true,
                 match: false,
@@ -345,7 +344,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-6 py-4 font-semibold shadow-shadow">
-                    Loading your game…
+                    載入你的遊戲…
                 </div>
             </div>
         );
@@ -365,12 +364,12 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                             Seat {session.seatNumber} · {session.childId}
                         </div>
                         {session.name && (
-                            <div className="text-lg font-bold">Hi {session.name}!</div>
+                            <div className="text-lg font-bold">嗨 {session.name}！</div>
                         )}
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <Sparkles className="h-4 w-4" />
-                        {config?.title ?? "Garden Builders"}: {phaseConfig.title} · Level{" "}
+                        {config?.title ?? "花園創建者"}: {phaseConfig.title} · Level{" "}
                         {progress.currentLevel}
                     </div>
                 </header>
@@ -380,14 +379,13 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                         <div>
                             <CardTitle>{mergedLevelConfig.target}</CardTitle>
                             <CardDescription>
-                                {phaseConfig.description ??
-                                    "Build a prompt to match the target image."}
+                                {phaseConfig.description ?? "建立一個提示以配對目標圖片。"}
                             </CardDescription>
                         </div>
                         <BadgeChip>
                             {isSectionComplete
-                                ? "Section complete"
-                                : `Phase ${progress.currentPhase} of ${config?.phases.length ?? 3}`}
+                                ? "單元完成"
+                                : `第 ${progress.currentPhase} 階段 / 共 ${config?.phases.length ?? 3} 階段`}
                         </BadgeChip>
                     </CardHeader>
                     <CardContent className="grid gap-6 lg:grid-cols-2">
@@ -413,27 +411,25 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                                     {loading ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            Generating…
+                                            生成中…
                                         </>
                                     ) : (
                                         <>
                                             <Wand2 className="h-4 w-4" />
-                                            Generate
+                                            生成
                                         </>
                                     )}
                                 </Button>
                                 {isPhaseLocked && (
                                     <span className="text-sm font-semibold text-foreground/70">
-                                        Waiting for coach instructions…
+                                        等待教練指示…
                                     </span>
                                 )}
                             </div>
                         </div>
 
                         <div className="space-y-3">
-                            <Label className="text-sm uppercase text-foreground/60">
-                                Latest image
-                            </Label>
+                            <Label className="text-sm uppercase text-foreground/60">最新圖片</Label>
                             <div className="aspect-square w-full overflow-hidden rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
                                 {imageUrl ? (
                                     // eslint-disable-next-line @next/next/no-img-element
@@ -444,7 +440,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                                     />
                                 ) : (
                                     <div className="flex h-full items-center justify-center text-sm font-semibold text-foreground/60">
-                                        Generate to see your art here
+                                        生成後在此查看你的作品
                                     </div>
                                 )}
                             </div>
@@ -474,15 +470,14 @@ function PhaseLockedBanner({ message }: { message: string }) {
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                     <Lock className="h-4 w-4" />
-                    <CardTitle className="text-base">Phase locked</CardTitle>
+                    <CardTitle className="text-base">階段已鎖定</CardTitle>
                 </div>
-                <BadgeChip>Waiting on coach</BadgeChip>
+                <BadgeChip>等待教練</BadgeChip>
             </CardHeader>
             <CardContent className="space-y-2">
                 <p className="font-semibold text-foreground">{message}</p>
                 <p className="text-sm font-semibold text-foreground/70">
-                    Keep this tab open — we&apos;ll unlock it as soon as the coach starts the next
-                    phase.
+                    請保持此分頁開啟 — 一旦教練開始下一階段我們會立即解鎖。
                 </p>
             </CardContent>
         </Card>
@@ -497,18 +492,15 @@ function SectionCompleteOverlay({ open }: { open: boolean }) {
                 <div className="relative w-full rounded-2xl border-4 border-foreground bg-main p-7 shadow-shadow">
                     <div className="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full border-4 border-foreground bg-secondary-background px-4 py-1 text-xs font-semibold shadow-shadow">
                         <Trophy className="h-4 w-4" />
-                        Section Complete
+                        單元完成
                     </div>
                     <div className="space-y-4 text-center">
-                        <p className="text-2xl font-black text-foreground">
-                            You cleared Garden Builders!
-                        </p>
+                        <p className="text-2xl font-black text-foreground">你已通過花園創建者！</p>
                         <p className="text-base font-semibold text-foreground/80">
-                            Nice work. We&apos;re loading the next section soon—keep this tab open
-                            and watch for instructions from your coach.
+                            做得好。我們即將載入下一單元 — 請保持此分頁開啟，並注意教練指示。
                         </p>
                         <p className="text-sm font-semibold text-foreground/60">
-                            Tip: you can still view your last image below, but generating is paused.
+                            提示：你仍可查看下方最後的圖片，但生成功能已暫停。
                         </p>
                     </div>
                 </div>
@@ -592,7 +584,7 @@ function BlockBuilder({
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveDragId(null);
-        
+
         // Capture ghost index before resetting
         const finalGhostIndex = ghostIndex;
         setGhostIndex(null);
@@ -673,13 +665,13 @@ function BlockBuilder({
 
         const newItems = [...selectedWithIds];
         const safeIndex = Math.max(0, Math.min(ghostIndex, newItems.length));
-        
+
         // Insert a ghost item
         newItems.splice(safeIndex, 0, {
             id: "ghost-placeholder",
             block: draggingBlock,
         });
-        
+
         return newItems;
     }, [selectedWithIds, ghostIndex, activeDragId, sourceBlocks]);
 
@@ -698,7 +690,7 @@ function BlockBuilder({
             onDragCancel={handleDragCancel}
         >
             <div className="space-y-3">
-                <Label className="text-sm uppercase text-foreground/70">Prompt blocks</Label>
+                <Label className="text-sm uppercase text-foreground/70">提示區塊</Label>
                 <div className="flex flex-wrap gap-2">
                     {sourceBlocks.map(({ id, block }) => (
                         <DraggableBlock
@@ -774,16 +766,13 @@ function PromptBar({
             ref={setNodeRef}
             className="min-h-[96px] rounded-md border-4 border-dashed border-foreground bg-secondary-background p-3 shadow-shadow transition-transform duration-150 ease-out hover:-translate-y-0.5"
         >
-            <p className="text-xs uppercase text-foreground/60">Prompt bar</p>
+            <p className="text-xs uppercase text-foreground/60">提示欄</p>
             {isEmpty && (
                 <p className="mt-2 text-sm font-semibold text-foreground/70">
-                    Drag blocks here, or click them to add.
+                    將區塊拖到這裡，或點擊以新增。
                 </p>
             )}
-            <SortableContext
-                items={items.map((item) => item.id)}
-                strategy={rectSortingStrategy}
-            >
+            <SortableContext items={items.map((item) => item.id)} strategy={rectSortingStrategy}>
                 <div className="mt-2 flex flex-wrap gap-2">
                     {items.map((item, idx) => {
                         // Check if it's the ghost placeholder
@@ -876,7 +865,7 @@ function RemovalZone() {
                 <p
                     className={`text-xs font-semibold uppercase ${isOver ? "text-red-600" : "text-foreground/60"}`}
                 >
-                    {isOver ? "Drop to remove" : "Drag here to remove"}
+                    {isOver ? "放開以移除" : "拖到這裡以移除"}
                 </p>
             </div>
         </div>
@@ -906,21 +895,19 @@ function ResultOverlay({
                 }`}
             >
                 <div className="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full border-4 border-foreground bg-main px-4 py-1 text-xs font-semibold shadow-shadow">
-                    {success ? "Match found" : "Try again"}
+                    {success ? "配對成功" : "再試一次"}
                 </div>
                 <div className="grid gap-4 sm:grid-cols-[2fr,1fr] sm:items-center">
                     <div className="space-y-3">
                         <div className="text-2xl font-bold">
-                            {success
-                                ? "Great job! Next level unlocked."
-                                : "Not quite—tweak your prompt."}
+                            {success ? "做得好！已解鎖下一關。" : "還不完全正確—請調整你的提示。"}
                         </div>
                         <p className="text-base font-semibold text-foreground/80">
-                            {feedback ?? (success ? "Looks good!" : "Give it another go.")}
+                            {feedback ?? (success ? "看起來不錯！" : "再試一次。")}
                         </p>
                         <div className="flex flex-wrap gap-3">
                             <Button variant="outline" onClick={onClose} className="shadow-shadow">
-                                Continue
+                                繼續
                             </Button>
                         </div>
                     </div>
@@ -934,7 +921,7 @@ function ResultOverlay({
                             />
                         ) : (
                             <div className="flex h-full min-h-[180px] items-center justify-center text-sm font-semibold text-foreground/60">
-                                No preview
+                                無預覽
                             </div>
                         )}
                     </div>

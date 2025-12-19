@@ -1,0 +1,27 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: taichung-hoc-app
+        env_file: .env.local
+        environment:
+            - MONGODB_URI=mongodb://mongo:27017/taichung_hoc
+            - NODE_ENV=production
+        ports:
+            - "3000:3000"
+        depends_on:
+            - mongo
+        restart: always
+
+    mongo:
+        image: mongo:latest
+        container_name: taichung-hoc-mongo
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongodb_data:/data/db
+        restart: always
+
+volumes:
+    mongodb_data:

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         await requireSectionOneComplete(session.childId);
         const match = await loadMatchViewForChild(session.childId);
         if (!match) {
-            return NextResponse.json({ error: "No match assigned" }, { status: 404 });
+            return NextResponse.json({ error: "等待管理員指派隊伍" }, { status: 404 });
         }
         return NextResponse.json({ match });
     } catch (err: unknown) {

@@ -23,15 +23,13 @@ export function Topbar({ email }: Props) {
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b-4 border-foreground bg-secondary-background px-4 shadow-nav">
             <div className="flex items-center gap-3">
                 <SidebarTrigger className="md:hidden" />
-                <div className="text-sm font-semibold uppercase tracking-tight">
-                    Admin Dashboard
-                </div>
+                <div className="text-sm font-semibold uppercase tracking-tight">管理員儀表板</div>
             </div>
             <div className="flex items-center gap-3">
-                <div className="hidden text-xs font-semibold sm:block">{email ?? "Signed in"}</div>
+                <div className="hidden text-xs font-semibold sm:block">{email ?? "已登入"}</div>
                 <Button variant="secondary" size="sm" className="gap-2" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4" />
-                    Sign out
+                    登出
                 </Button>
             </div>
         </header>
