@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { onSnapshot, orderBy, query } from "firebase/firestore";
+import { useMemo } from "react";
 
-import { gardenLevelsCollection, gardenPhasesCollection } from "@/lib/collections";
 import { GardenLevel, GardenPhase } from "@/lib/garden-types";
+import { usePolling } from "./use-polling";
 
 export type GardenContentState = {
     loading: boolean;
@@ -14,51 +13,32 @@ export type GardenContentState = {
 };
 
 export function useGardenContent(): GardenContentState {
-    const [phases, setPhases] = useState<GardenPhase[]>([]);
-    const [levels, setLevels] = useState<GardenLevel[]>([]);
-    const [phaseLoading, setPhaseLoading] = useState(true);
-    const [levelLoading, setLevelLoading] = useState(true);
-    const [error, setError] = useState<string | undefined>(undefined);
+    const {
+        data: phases,
+        loading: phaseLoading,
+        error: phaseError,
+    } = usePolling<GardenPhase[]>("/api/admin/garden/phases", 5000, {
+        select: (payload) => (payload as { phases: GardenPhase[] }).phases ?? [],
+        transform: (items) => [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    });
 
-    useEffect(() => {
-        const q = query(gardenPhasesCollection, orderBy("order", "asc"));
-        const unsub = onSnapshot(
-            q,
-            (snap) => {
-                setPhases(snap.docs.map((d) => d.data()));
-                setPhaseLoading(false);
-            },
-            (err) => {
-                setError(err.message);
-                setPhaseLoading(false);
-            }
-        );
+    const {
+        data: levels,
+        loading: levelLoading,
+        error: levelError,
+    } = usePolling<GardenLevel[]>("/api/admin/garden/levels", 5000, {
+        select: (payload) => (payload as { levels: GardenLevel[] }).levels ?? [],
+        transform: (items) =>
+            [...items].sort((a, b) => (a.levelNumber ?? 0) - (b.levelNumber ?? 0)),
+    });
 
-        return () => unsub();
-    }, []);
-
-    useEffect(() => {
-        const q = query(gardenLevelsCollection, orderBy("levelNumber", "asc"));
-        const unsub = onSnapshot(
-            q,
-            (snap) => {
-                setLevels(snap.docs.map((d) => d.data()));
-                setLevelLoading(false);
-            },
-            (err) => {
-                setError(err.message);
-                setLevelLoading(false);
-            }
-        );
-
-        return () => unsub();
-    }, []);
+    const error = phaseError ?? levelError;
 
     return useMemo(
         () => ({
             loading: phaseLoading || levelLoading,
-            phases,
-            levels,
+            phases: phases ?? [],
+            levels: levels ?? [],
             error,
         }),
         [phaseLoading, levelLoading, phases, levels, error]

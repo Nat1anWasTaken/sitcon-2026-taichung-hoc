@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { onSnapshot, orderBy, query } from "firebase/firestore";
+import { useMemo } from "react";
 
-import { childrenCollection } from "@/lib/collections";
 import { ChildAccount } from "@/lib/types";
+import { usePolling } from "./use-polling";
 
 type ChildrenState = {
     loading: boolean;
@@ -13,28 +12,21 @@ type ChildrenState = {
 };
 
 export function useChildren(): ChildrenState {
-    const [state, setState] = useState<ChildrenState>({
-        loading: true,
-        children: [],
-    });
+    const { data, loading, error } = usePolling<ChildAccount[]>(
+        "/api/admin/children",
+        5000,
+        {
+            select: (payload) => (payload as { children: ChildAccount[] }).children ?? [],
+            transform: (children) =>
+                [...children].sort((a, b) => (a.seatNumber ?? 0) - (b.seatNumber ?? 0)),
+        }
+    );
 
-    useEffect(() => {
-        const q = query(childrenCollection, orderBy("seatNumber", "asc"));
-        const unsubscribe = onSnapshot(
-            q,
-            (snap) => {
-                const data = snap.docs.map((d) => d.data());
-                setState({ loading: false, children: data });
-            },
-            (err) => {
-                setState((prev) => ({ ...prev, loading: false, error: err.message }));
-            }
-        );
-
-        return () => unsubscribe();
-    }, []);
-
-    return state;
+    return {
+        loading,
+        error,
+        children: data ?? [],
+    };
 }
 
 export function useChildStats(children: ChildAccount[]) {

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onSnapshot } from "firebase/firestore";
+import { useMemo } from "react";
 
-import { sectionProgressCollection } from "@/lib/collections";
-import { getDefaultSectionProgress, mergeSectionProgressSnapshot } from "@/lib/child-progress";
+import { getDefaultSectionProgress } from "@/lib/child-progress";
 import { SectionProgress } from "@/lib/game-types";
+import { usePolling } from "./use-polling";
 
 type ProgressState = {
     loading: boolean;
@@ -14,34 +13,31 @@ type ProgressState = {
 };
 
 export function useChildProgress(childId: string, sectionIds: string[]): ProgressState {
-    const [state, setState] = useState<ProgressState>({
-        loading: true,
-        progress: {},
-    });
-
-    useEffect(() => {
-        if (!childId) return;
-        const unsubscribe = onSnapshot(
-            sectionProgressCollection(childId),
-            (snap) => {
-                const data: Record<string, SectionProgress> = {};
-                snap.forEach((doc) => {
-                    data[doc.id] = mergeSectionProgressSnapshot(doc.id, doc);
-                });
-                // Ensure missing sections still surface with defaults for the UI.
+    const { data, loading, error } = usePolling<Record<string, SectionProgress>>(
+        childId ? `/api/game/progress?childId=${encodeURIComponent(childId)}` : "",
+        5000,
+        {
+            enabled: Boolean(childId),
+            select: (payload) =>
+                (payload as { progress: Record<string, SectionProgress> }).progress ?? {},
+            transform: (progress) => {
+                const next = { ...progress };
                 sectionIds.forEach((id) => {
-                    if (!data[id]) {
-                        data[id] = getDefaultSectionProgress(id);
-                    }
+                    const current = next[id];
+                    const defaults = getDefaultSectionProgress(id);
+                    next[id] = current ? { ...defaults, ...current } : defaults;
                 });
-                setState({ loading: false, progress: data });
+                return next;
             },
-            (err) => {
-                setState((prev) => ({ ...prev, loading: false, error: err.message }));
-            }
-        );
-        return () => unsubscribe();
-    }, [childId, sectionIds]);
+        }
+    );
 
-    return state;
+    return useMemo(
+        () => ({
+            loading,
+            error,
+            progress: data ?? {},
+        }),
+        [data, error, loading]
+    );
 }

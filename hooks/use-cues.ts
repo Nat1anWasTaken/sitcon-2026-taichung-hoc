@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onSnapshot, orderBy, query } from "firebase/firestore";
+import { useMemo } from "react";
 
-import { gameCuesCollection } from "@/lib/collections";
 import { GameCue } from "@/lib/game-types";
+import { usePolling } from "./use-polling";
 
 type CueState = {
     loading: boolean;
@@ -13,21 +12,18 @@ type CueState = {
 };
 
 export function useCues(): CueState {
-    const [state, setState] = useState<CueState>({ loading: true, cues: [] });
+    const { data, loading, error } = usePolling<GameCue[]>("/api/admin/cues", 5000, {
+        select: (payload) => (payload as { cues: GameCue[] }).cues ?? [],
+        transform: (cues) =>
+            [...cues].sort((a, b) => {
+                const tA = a.updatedAt?.toMillis?.() ?? 0;
+                const tB = b.updatedAt?.toMillis?.() ?? 0;
+                return tB - tA;
+            }),
+    });
 
-    useEffect(() => {
-        const q = query(gameCuesCollection, orderBy("updatedAt", "desc"));
-        const unsub = onSnapshot(
-            q,
-            (snap) => {
-                const cues = snap.docs.map((d) => d.data());
-                setState({ loading: false, cues });
-            },
-            (err) => setState({ loading: false, cues: [], error: err.message })
-        );
-
-        return () => unsub();
-    }, []);
-
-    return state;
+    return useMemo(
+        () => ({ loading, cues: data ?? [], error }),
+        [data, error, loading]
+    );
 }

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onSnapshot, query } from "firebase/firestore";
+import { useMemo } from "react";
 
-import { jailbreakMatchesCollection, jailbreakThemesCollection } from "@/lib/collections";
 import { JailbreakMatch, JailbreakTheme } from "@/lib/jailbreak-types";
+import { usePolling } from "./use-polling";
 
 type ThemeState = {
     loading: boolean;
@@ -19,51 +18,45 @@ type MatchState = {
 };
 
 export function useJailbreakThemes(): ThemeState {
-    const [state, setState] = useState<ThemeState>({ loading: true, themes: [] });
-
-    useEffect(() => {
-        const q = query(jailbreakThemesCollection);
-        const unsub = onSnapshot(
-            q,
-            (snap) => {
-                const themes = snap.docs.map((d) => d.data());
-                themes.sort((a, b) => {
-                    // Treat null/pending timestamps as "very new" so they appear at top
-                    const tA = a.createdAt?.toMillis() ?? Date.now() + 100000;
-                    const tB = b.createdAt?.toMillis() ?? Date.now() + 100000;
+    const { data, loading, error } = usePolling<JailbreakTheme[]>(
+        "/api/admin/jailbreak/themes",
+        5000,
+        {
+            select: (payload) =>
+                (payload as { themes: JailbreakTheme[] }).themes ?? [],
+            transform: (themes) =>
+                [...themes].sort((a, b) => {
+                    const tA = a.createdAt?.toMillis?.() ?? Date.now() + 100000;
+                    const tB = b.createdAt?.toMillis?.() ?? Date.now() + 100000;
                     return tB - tA;
-                });
-                setState({ loading: false, themes });
-            },
-            (err) => setState({ loading: false, themes: [], error: err.message })
-        );
-        return () => unsub();
-    }, []);
+                }),
+        }
+    );
 
-    return state;
+    return useMemo(
+        () => ({ loading, themes: data ?? [], error }),
+        [data, error, loading]
+    );
 }
 
 export function useJailbreakMatches(): MatchState {
-    const [state, setState] = useState<MatchState>({ loading: true, matches: [] });
-
-    useEffect(() => {
-        const q = query(jailbreakMatchesCollection);
-        const unsub = onSnapshot(
-            q,
-            (snap) => {
-                const matches = snap.docs.map((d) => d.data());
-                matches.sort((a, b) => {
-                    // Treat null/pending timestamps as "very new" so they appear at top
-                    const tA = a.updatedAt?.toMillis() ?? Date.now() + 100000;
-                    const tB = b.updatedAt?.toMillis() ?? Date.now() + 100000;
+    const { data, loading, error } = usePolling<JailbreakMatch[]>(
+        "/api/admin/jailbreak/matches",
+        5000,
+        {
+            select: (payload) =>
+                (payload as { matches: JailbreakMatch[] }).matches ?? [],
+            transform: (matches) =>
+                [...matches].sort((a, b) => {
+                    const tA = a.updatedAt?.toMillis?.() ?? Date.now() + 100000;
+                    const tB = b.updatedAt?.toMillis?.() ?? Date.now() + 100000;
                     return tB - tA;
-                });
-                setState({ loading: false, matches });
-            },
-            (err) => setState({ loading: false, matches: [], error: err.message })
-        );
-        return () => unsub();
-    }, []);
+                }),
+        }
+    );
 
-    return state;
+    return useMemo(
+        () => ({ loading, matches: data ?? [], error }),
+        [data, error, loading]
+    );
 }
