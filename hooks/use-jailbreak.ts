@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { JailbreakMatch, JailbreakTheme } from "@/lib/jailbreak-types";
-import { usePolling } from "./use-polling";
+import { fetchJson, getErrorMessage } from "@/lib/query-utils";
 
 type ThemeState = {
     loading: boolean;
@@ -20,47 +21,57 @@ type MatchState = {
 };
 
 export function useJailbreakThemes(): ThemeState {
-    const { data, loading, error, refetch } = usePolling<JailbreakTheme[]>(
-        "/api/admin/jailbreak/themes",
-        5000,
-        {
-            select: (payload) =>
-                (payload as { themes: JailbreakTheme[] }).themes ?? [],
-            transform: (themes) =>
-                [...themes].sort((a, b) => {
-                    const fallback = Number.MAX_SAFE_INTEGER; // Items without timestamp appear first
-                    const tA = a.createdAt ? new Date(a.createdAt).getTime() : fallback;
-                    const tB = b.createdAt ? new Date(b.createdAt).getTime() : fallback;
-                    return tB - tA;
-                }),
-        }
-    );
+    const query = useQuery({
+        queryKey: ["admin", "jailbreak", "themes"],
+        queryFn: () => fetchJson<{ themes: JailbreakTheme[] }>("/api/admin/jailbreak/themes"),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        select: (payload) =>
+            [...(payload.themes ?? [])].sort((a, b) => {
+                const fallback = Number.MAX_SAFE_INTEGER; // Items without timestamp appear first
+                const tA = a.createdAt ? new Date(a.createdAt).getTime() : fallback;
+                const tB = b.createdAt ? new Date(b.createdAt).getTime() : fallback;
+                return tB - tA;
+            }),
+    });
 
     return useMemo(
-        () => ({ loading, themes: data ?? [], error, refresh: refetch }),
-        [data, error, loading, refetch]
+        () => ({
+            loading: query.isPending,
+            themes: query.data ?? [],
+            error: query.error
+                ? getErrorMessage(query.error, "Failed to load jailbreak themes")
+                : undefined,
+            refresh: () => query.refetch().then(() => undefined),
+        }),
+        [query.data, query.error, query.isPending, query.refetch]
     );
 }
 
 export function useJailbreakMatches(): MatchState {
-    const { data, loading, error, refetch } = usePolling<JailbreakMatch[]>(
-        "/api/admin/jailbreak/matches",
-        5000,
-        {
-            select: (payload) =>
-                (payload as { matches: JailbreakMatch[] }).matches ?? [],
-            transform: (matches) =>
-                [...matches].sort((a, b) => {
-                    const fallback = Number.MAX_SAFE_INTEGER;
-                    const tA = a.updatedAt ? new Date(a.updatedAt).getTime() : fallback;
-                    const tB = b.updatedAt ? new Date(b.updatedAt).getTime() : fallback;
-                    return tB - tA;
-                }),
-        }
-    );
+    const query = useQuery({
+        queryKey: ["admin", "jailbreak", "matches"],
+        queryFn: () => fetchJson<{ matches: JailbreakMatch[] }>("/api/admin/jailbreak/matches"),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        select: (payload) =>
+            [...(payload.matches ?? [])].sort((a, b) => {
+                const fallback = Number.MAX_SAFE_INTEGER;
+                const tA = a.updatedAt ? new Date(a.updatedAt).getTime() : fallback;
+                const tB = b.updatedAt ? new Date(b.updatedAt).getTime() : fallback;
+                return tB - tA;
+            }),
+    });
 
     return useMemo(
-        () => ({ loading, matches: data ?? [], error, refresh: refetch }),
-        [data, error, loading, refetch]
+        () => ({
+            loading: query.isPending,
+            matches: query.data ?? [],
+            error: query.error
+                ? getErrorMessage(query.error, "Failed to load jailbreak matches")
+                : undefined,
+            refresh: () => query.refetch().then(() => undefined),
+        }),
+        [query.data, query.error, query.isPending, query.refetch]
     );
 }

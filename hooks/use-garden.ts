@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { GardenLevel, GardenPhase } from "@/lib/garden-types";
-import { usePolling } from "./use-polling";
+import { fetchJson, getErrorMessage } from "@/lib/query-utils";
 
 export type GardenContentState = {
     loading: boolean;
@@ -14,39 +15,47 @@ export type GardenContentState = {
 };
 
 export function useGardenContent(): GardenContentState {
-    const {
-        data: phases,
-        loading: phaseLoading,
-        error: phaseError,
-        refetch: refetchPhases,
-    } = usePolling<GardenPhase[]>("/api/admin/garden/phases", 5000, {
-        select: (payload) => (payload as { phases: GardenPhase[] }).phases ?? [],
-        transform: (items) => [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    const phaseQuery = useQuery({
+        queryKey: ["admin", "garden", "phases"],
+        queryFn: () => fetchJson<{ phases: GardenPhase[] }>("/api/admin/garden/phases"),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        select: (payload) =>
+            [...(payload.phases ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     });
 
-    const {
-        data: levels,
-        loading: levelLoading,
-        error: levelError,
-        refetch: refetchLevels,
-    } = usePolling<GardenLevel[]>("/api/admin/garden/levels", 5000, {
-        select: (payload) => (payload as { levels: GardenLevel[] }).levels ?? [],
-        transform: (items) =>
-            [...items].sort((a, b) => (a.levelNumber ?? 0) - (b.levelNumber ?? 0)),
+    const levelQuery = useQuery({
+        queryKey: ["admin", "garden", "levels"],
+        queryFn: () => fetchJson<{ levels: GardenLevel[] }>("/api/admin/garden/levels"),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        select: (payload) =>
+            [...(payload.levels ?? [])].sort(
+                (a, b) => (a.levelNumber ?? 0) - (b.levelNumber ?? 0)
+            ),
     });
 
-    const error = phaseError ?? levelError;
+    const rawError = phaseQuery.error ?? levelQuery.error;
+    const error = rawError ? getErrorMessage(rawError, "Failed to load garden data") : undefined;
 
     return useMemo(
         () => ({
-            loading: phaseLoading || levelLoading,
-            phases: phases ?? [],
-            levels: levels ?? [],
+            loading: phaseQuery.isPending || levelQuery.isPending,
+            phases: phaseQuery.data ?? [],
+            levels: levelQuery.data ?? [],
             error,
             refresh: async () => {
-                await Promise.all([refetchPhases(), refetchLevels()]);
+                await Promise.all([phaseQuery.refetch(), levelQuery.refetch()]);
             },
         }),
-        [phaseLoading, levelLoading, phases, levels, error, refetchPhases, refetchLevels]
+        [
+            error,
+            levelQuery.data,
+            levelQuery.isPending,
+            levelQuery.refetch,
+            phaseQuery.data,
+            phaseQuery.isPending,
+            phaseQuery.refetch,
+        ]
     );
 }

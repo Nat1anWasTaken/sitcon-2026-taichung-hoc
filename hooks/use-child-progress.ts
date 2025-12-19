@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { getDefaultSectionProgress } from "@/lib/child-progress";
 import { SectionProgress } from "@/lib/game-types";
-import { usePolling } from "./use-polling";
+import { fetchJson, getErrorMessage } from "@/lib/query-utils";
 
 type ProgressState = {
     loading: boolean;
@@ -13,31 +14,36 @@ type ProgressState = {
 };
 
 export function useChildProgress(childId: string, sectionIds: string[]): ProgressState {
-    const { data, loading, error } = usePolling<Record<string, SectionProgress>>(
-        childId ? `/api/game/progress?childId=${encodeURIComponent(childId)}` : "",
-        5000,
-        {
-            enabled: Boolean(childId),
-            select: (payload) =>
-                (payload as { progress: Record<string, SectionProgress> }).progress ?? {},
-            transform: (progress) => {
-                const next = { ...progress };
-                sectionIds.forEach((id) => {
-                    const current = next[id];
-                    const defaults = getDefaultSectionProgress(id);
-                    next[id] = current ? { ...defaults, ...current } : defaults;
-                });
-                return next;
-            },
-        }
-    );
+    const query = useQuery({
+        queryKey: ["game", "progress", childId],
+        queryFn: () =>
+            fetchJson<{ progress: Record<string, SectionProgress> }>(
+                `/api/game/progress?childId=${encodeURIComponent(childId)}`
+            ),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        enabled: Boolean(childId),
+        select: (payload) => payload.progress ?? {},
+    });
+
+    const progress = useMemo(() => {
+        const next = { ...(query.data ?? {}) };
+        sectionIds.forEach((id) => {
+            const current = next[id];
+            const defaults = getDefaultSectionProgress(id);
+            next[id] = current ? { ...defaults, ...current } : defaults;
+        });
+        return next;
+    }, [query.data, sectionIds]);
 
     return useMemo(
         () => ({
-            loading,
-            error,
-            progress: data ?? {},
+            loading: query.isPending,
+            error: query.error
+                ? getErrorMessage(query.error, "Failed to load progress")
+                : undefined,
+            progress,
         }),
-        [data, error, loading]
+        [progress, query.error, query.isPending]
     );
 }

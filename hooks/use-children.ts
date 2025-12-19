@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { ChildAccount } from "@/lib/types";
-import { usePolling } from "./use-polling";
+import { fetchJson, getErrorMessage } from "@/lib/query-utils";
 
 type ChildrenState = {
     loading: boolean;
@@ -13,21 +14,24 @@ type ChildrenState = {
 };
 
 export function useChildren(): ChildrenState {
-    const { data, loading, error, refetch } = usePolling<ChildAccount[]>(
-        "/api/admin/children",
-        5000,
-        {
-            select: (payload) => (payload as { children: ChildAccount[] }).children ?? [],
-            transform: (children) =>
-                [...children].sort((a, b) => (a.seatNumber ?? 0) - (b.seatNumber ?? 0)),
-        }
-    );
+    const query = useQuery({
+        queryKey: ["admin", "children"],
+        queryFn: () => fetchJson<{ children: ChildAccount[] }>("/api/admin/children"),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        select: (payload) =>
+            [...(payload.children ?? [])].sort(
+                (a, b) => (a.seatNumber ?? 0) - (b.seatNumber ?? 0)
+            ),
+    });
 
     return {
-        loading,
-        error,
-        children: data ?? [],
-        refresh: refetch,
+        loading: query.isPending,
+        error: query.error
+            ? getErrorMessage(query.error, "Failed to load children")
+            : undefined,
+        children: query.data ?? [],
+        refresh: () => query.refetch().then(() => undefined),
     };
 }
 

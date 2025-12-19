@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { GameCue } from "@/lib/game-types";
-import { usePolling } from "./use-polling";
+import { fetchJson, getErrorMessage } from "@/lib/query-utils";
 
 type CueState = {
     loading: boolean;
@@ -13,10 +14,13 @@ type CueState = {
 };
 
 export function useCues(): CueState {
-    const { data, loading, error, refetch } = usePolling<GameCue[]>("/api/admin/cues", 5000, {
-        select: (payload) => (payload as { cues: GameCue[] }).cues ?? [],
-        transform: (cues) =>
-            [...cues].sort((a, b) => {
+    const query = useQuery({
+        queryKey: ["admin", "cues"],
+        queryFn: () => fetchJson<{ cues: GameCue[] }>("/api/admin/cues"),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+        select: (payload) =>
+            [...(payload.cues ?? [])].sort((a, b) => {
                 const tA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
                 const tB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
                 return tB - tA;
@@ -24,7 +28,14 @@ export function useCues(): CueState {
     });
 
     return useMemo(
-        () => ({ loading, cues: data ?? [], error, refresh: refetch }),
-        [data, error, loading, refetch]
+        () => ({
+            loading: query.isPending,
+            cues: query.data ?? [],
+            error: query.error
+                ? getErrorMessage(query.error, "Failed to load cues")
+                : undefined,
+            refresh: () => query.refetch().then(() => undefined),
+        }),
+        [query.data, query.error, query.isPending, query.refetch]
     );
 }

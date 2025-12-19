@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ScoreboardSection, ScoreboardSnapshot } from "@/lib/scoreboard-types";
 import { JailbreakScoreboardRow } from "@/lib/jailbreak-scoreboard-types";
+import { fetchJson, getErrorMessage } from "@/lib/query-utils";
 
 export type CombinedScoreboards = {
     garden: ScoreboardSnapshot;
@@ -19,28 +21,27 @@ export type ScoreboardState = {
 const FALLBACK_POLL_MS = 6000;
 
 export function useScoreboard(): ScoreboardState {
-    const [snapshot, setSnapshot] = useState<CombinedScoreboards | null>(null);
-    const [error, setError] = useState<string | undefined>();
+    const queryClient = useQueryClient();
+    const [streamError, setStreamError] = useState<string | undefined>();
+    const query = useQuery({
+        queryKey: ["scoreboard"],
+        queryFn: () => fetchJson<CombinedScoreboards>("/api/scoreboard?mode=json"),
+        refetchOnWindowFocus: false,
+    });
 
     useEffect(() => {
         let es: EventSource | null = null;
         let fallbackTimer: ReturnType<typeof setInterval> | null = null;
         let cancelled = false;
-
         const fetchOnce = async () => {
             try {
-                const res = await fetch("/api/scoreboard?mode=json", { cache: "no-store" });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = (await res.json()) as CombinedScoreboards;
-                if (!cancelled) {
-                    setSnapshot(data);
-                    setError(undefined);
+                const result = await query.refetch();
+                if (!cancelled && result.data) {
+                    setStreamError(undefined);
                 }
             } catch (err: unknown) {
                 if (!cancelled) {
-                    const message =
-                        err instanceof Error ? err.message : "Unable to load scoreboard";
-                    setError(message);
+                    setStreamError(getErrorMessage(err, "Unable to load scoreboard"));
                 }
             }
         };
@@ -56,11 +57,11 @@ export function useScoreboard(): ScoreboardState {
             es = new EventSource("/api/scoreboard");
             es.onmessage = (event) => {
                 const data = JSON.parse(event.data) as CombinedScoreboards;
-                setSnapshot(data);
-                setError(undefined);
+                queryClient.setQueryData(["scoreboard"], data);
+                setStreamError(undefined);
             };
             es.onerror = () => {
-                setError("Live connection lost. Reconnecting…");
+                setStreamError("Live connection lost. Reconnecting…");
                 es?.close();
                 es = null;
                 // Try a quick reconnect; if it keeps failing, fallback to polling
@@ -77,15 +78,19 @@ export function useScoreboard(): ScoreboardState {
             es?.close();
             if (fallbackTimer) clearInterval(fallbackTimer);
         };
-    }, []);
+    }, [query.refetch, queryClient]);
+
+    const error =
+        streamError ??
+        (query.error ? getErrorMessage(query.error, "Unable to load scoreboard") : undefined);
 
     return useMemo(
         () => ({
-            loading: !snapshot && !error,
+            loading: !query.data && !error,
             error,
-            snapshot,
+            snapshot: query.data ?? null,
         }),
-        [error, snapshot]
+        [error, query.data]
     );
 }
 
