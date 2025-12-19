@@ -1,42 +1,33 @@
-import { Timestamp } from "firebase-admin/firestore";
-
-import { AgentRun, AgentScoreboardRow } from "../agent-types";
-import { adminFirestore } from "../firebase-admin";
-import { ChildAccount } from "@/lib/types";
-
-function assertDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
-}
+import { connectToDatabase } from "../mongodb";
+import { AgentRunModel, IAgentRun } from "../models/agent-run";
+import { ChildModel, IChild } from "../models/child";
+import { AgentScoreboardRow } from "../agent-types";
 
 export async function buildAgentScoreboard() {
-    const db = assertDb();
-    const runsSnap = await db.collection("agentRuns").where("passed", "==", true).get();
-    const childrenSnap = await db.collection("children").get();
-    const childMap = new Map(childrenSnap.docs.map((d) => [d.id, d.data() as ChildAccount]));
+    await connectToDatabase();
+    const runs = await AgentRunModel.find({ passed: true }).lean<IAgentRun[]>();
+    const children = await ChildModel.find({}).lean<IChild[]>();
+    const childMap = new Map(children.map((child) => [child._id, child]));
 
-    const rows: AgentScoreboardRow[] = runsSnap.docs.map((doc) => {
-        const data = doc.data() as AgentRun;
-        const child = childMap.get(data.childId);
-        const totalTokens: number = data.usage?.totalTokens ?? 0;
+    const rows: AgentScoreboardRow[] = runs.map((run) => {
+        const child = childMap.get(run.childId);
+        const totalTokens: number = run.usage?.totalTokens ?? 0;
         const score = Math.floor(1_000_000 / (Math.max(totalTokens, 1) + 1));
         return {
-            childId: data.childId,
+            childId: run.childId,
             seatNumber: child?.seatNumber ?? 0,
             name: child?.name ?? "",
-            levelId: data.levelId,
-            stageType: data.stageType,
+            levelId: run.levelId,
+            stageType: run.stageType,
             totalTokens,
             score,
-            bestForLevel: data.bestForLevel ?? false,
+            bestForLevel: run.bestForLevel ?? false,
         };
     });
 
     rows.sort((a, b) => b.score - a.score || a.totalTokens - b.totalTokens);
 
-    const generatedAt =
-        (runsSnap.docs[0]?.createTime as Timestamp | undefined)?.toDate?.()?.toISOString?.() ??
-        new Date().toISOString();
+    const generatedAt = new Date().toISOString();
 
     return { generatedAt, rows };
 }

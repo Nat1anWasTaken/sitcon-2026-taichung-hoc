@@ -14,6 +14,20 @@ export type ToolScope =
     | { allowedDocIds: string[] }
     | Record<string, unknown>;
 
+function coerceDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+    if (value instanceof Date) return value;
+    if (typeof value === "string" || typeof value === "number") {
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    if (typeof value === "object" && "toDate" in (value as object)) {
+        const fn = (value as { toDate?: () => Date }).toDate;
+        if (fn) return fn();
+    }
+    return undefined;
+}
+
 function enforceEntity(scope: ToolScope | undefined, entityKey: string) {
     const allowed = (scope as { allowedEntityKeys?: string[] } | undefined)?.allowedEntityKeys;
     if (allowed && !allowed.includes(entityKey)) {
@@ -45,7 +59,7 @@ export async function searchDocs(
                 docId: d.id,
                 sourceTitle: d.sourceTitle,
                 sourceTier: d.sourceTier,
-                publishedAt: d.publishedAt.toDate(),
+                publishedAt: coerceDate(d.publishedAt),
                 supersedesDocId: d.supersedesDocId ?? null,
             })),
         },
@@ -70,7 +84,7 @@ export async function readDoc(
                       content: doc.content.slice(0, 600),
                       sourceTitle: doc.sourceTitle,
                       sourceTier: doc.sourceTier,
-                      publishedAt: doc.publishedAt.toDate(),
+                      publishedAt: coerceDate(doc.publishedAt),
                   }
                 : null,
         },

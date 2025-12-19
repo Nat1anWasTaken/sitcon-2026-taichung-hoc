@@ -1,52 +1,59 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
-
-import { adminFirestore } from "../firebase-admin";
+import { connectToDatabase } from "../mongodb";
+import { ChildAgentProgressModel, IChildAgentProgress } from "../models/child-agent-progress";
 
 export type AgentProgress = {
     childId: string;
     currentLevelOrder: number;
     waitingCueType?: string | null;
-    updatedAt: Timestamp;
+    updatedAt: Date;
 };
 
 const DEFAULT_PROGRESS: AgentProgress = {
     childId: "",
     currentLevelOrder: 1,
     waitingCueType: null,
-    updatedAt: Timestamp.now(),
+    updatedAt: new Date(),
 };
 
-function assertDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
-}
-
 export async function getAgentProgress(childId: string): Promise<AgentProgress> {
-    const db = assertDb();
-    const ref = db.collection("childAgentProgress").doc(childId);
-    const snap = await ref.get();
-    if (!snap.exists) {
-        const seed: AgentProgress = { ...DEFAULT_PROGRESS, childId, updatedAt: Timestamp.now() };
-        await ref.set(seed);
+    await connectToDatabase();
+    const doc = await ChildAgentProgressModel.findById(childId).lean<IChildAgentProgress | null>();
+    if (!doc) {
+        const seed: AgentProgress = { ...DEFAULT_PROGRESS, childId, updatedAt: new Date() };
+        await ChildAgentProgressModel.create({
+            _id: childId,
+            currentLevelOrder: seed.currentLevelOrder,
+            waitingCueType: seed.waitingCueType ?? null,
+        });
         return seed;
     }
-    const data = snap.data() as AgentProgress;
     return {
-        ...DEFAULT_PROGRESS,
-        ...data,
         childId,
+        currentLevelOrder: doc.currentLevelOrder ?? DEFAULT_PROGRESS.currentLevelOrder,
+        waitingCueType: doc.waitingCueType ?? null,
+        updatedAt: doc.updatedAt ?? new Date(),
     };
 }
 
 export async function saveAgentProgress(childId: string, data: Partial<AgentProgress>) {
-    const db = assertDb();
-    const ref = db.collection("childAgentProgress").doc(childId);
-    await ref.set(
+    await connectToDatabase();
+    const updates: Record<string, unknown> = {
+        updatedAt: new Date(),
+    };
+    Object.entries(data).forEach(([key, value]) => {
+        if (key === "updatedAt" || typeof value === "undefined") return;
+        updates[key] = value;
+    });
+    await ChildAgentProgressModel.updateOne(
+        { _id: childId },
         {
-            childId,
-            ...data,
-            updatedAt: FieldValue.serverTimestamp(),
+            $set: updates,
+            $setOnInsert: {
+                _id: childId,
+                currentLevelOrder: DEFAULT_PROGRESS.currentLevelOrder,
+                waitingCueType: null,
+            },
         },
-        { merge: true }
+        { upsert: true }
     );
 }
