@@ -6,7 +6,7 @@ export interface IGameCue {
     id: string; // Same as _id for compatibility
     type: string; // "start-phase-3" | "unlock-blocks" | "note" | string
     active: boolean;
-    payload?: Record<string, unknown>;
+    payload?: Map<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
 }
