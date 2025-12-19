@@ -34,11 +34,7 @@ type SectionOneProps = {
     onSectionComplete?: () => void;
 };
 
-const normalizePromptForMatch = (value: string) =>
-    value
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim();
+const normalizePromptForMatch = (value: string) => value.toLowerCase().replace(/\s+/g, " ").trim();
 
 const isPromptCopyingTarget = (prompt: string, target: string) => {
     if (!prompt || !target) return false;
@@ -214,19 +210,19 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
 
         if (progress.currentPhase === 3) {
             if (progress.phase1Complete === false || progress.phase2Complete === false) {
-                return "請先完成前面的階段，教練會解鎖最終任務。";
+                return "請先完成前面的階段，講師會解鎖最終任務。";
             }
-            return "你的教練尚未啟動最終任務。請保持此分頁開啟！";
+            return "你的講師尚未啟動最終任務。請保持此分頁開啟！";
         }
 
         if (progress.currentPhase === 2) {
             if (progress.phase1Complete === false) {
                 return "請先完成第一階段以解鎖下一挑戰。";
             }
-            return "你的教練尚未啟動第二階段。準備輸入你的提示吧！";
+            return "你的講師尚未啟動第二階段。準備輸入你的提示吧！";
         }
 
-        return "此階段已被教練鎖定。請等待指示！";
+        return "此階段已被講師鎖定。請等待指示！";
     }, [isPhaseLocked, progress]);
 
     const isSectionComplete = progress?.sectionComplete ?? false;
@@ -452,7 +448,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                                 </Button>
                                 {isPhaseLocked && (
                                     <span className="text-sm font-semibold text-foreground/70">
-                                        等待教練指示…
+                                        等待講師指示…
                                     </span>
                                 )}
                             </div>
@@ -502,12 +498,12 @@ function PhaseLockedBanner({ message }: { message: string }) {
                     <Lock className="h-4 w-4" />
                     <CardTitle className="text-base">階段已鎖定</CardTitle>
                 </div>
-                <BadgeChip>等待教練</BadgeChip>
+                <BadgeChip>等待講師</BadgeChip>
             </CardHeader>
             <CardContent className="space-y-2">
                 <p className="font-semibold text-foreground">{message}</p>
                 <p className="text-sm font-semibold text-foreground/70">
-                    請保持此分頁開啟 — 一旦教練開始下一階段我們會立即解鎖。
+                    請保持此分頁開啟 — 一旦講師開始下一階段我們會立即解鎖。
                 </p>
             </CardContent>
         </Card>
@@ -527,7 +523,7 @@ function SectionCompleteOverlay({ open }: { open: boolean }) {
                     <div className="space-y-4 text-center">
                         <p className="text-2xl font-black text-foreground">你已通過第一單元！</p>
                         <p className="text-base font-semibold text-foreground/80">
-                            做得好。我們即將載入下一單元 — 請保持此分頁開啟，並注意教練指示。
+                            做得好。我們即將載入下一單元 — 請保持此分頁開啟，並注意講師指示。
                         </p>
                         <p className="text-sm font-semibold text-foreground/60">
                             提示：你仍可查看下方最後的圖片，但生成功能已暫停。
