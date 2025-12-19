@@ -71,13 +71,13 @@ Replace each `onSnapshot` real-time listener with a polling endpoint.
 
 | Current Real-time Hook | New API Endpoint | Polling Interval |
 |------------------------|------------------|------------------|
-| `use-children.ts` → `onSnapshot(childrenCollection)` | `GET /api/admin/children` | 5s |
-| `use-jailbreak.ts` → `onSnapshot(jailbreakThemesCollection)` | `GET /api/admin/jailbreak/themes` | 10s |
-| `use-jailbreak.ts` → `onSnapshot(jailbreakMatchesCollection)` | `GET /api/admin/jailbreak/matches` | 3s |
-| `use-child-progress.ts` → `onSnapshot(sectionProgressCollection)` | `GET /api/game/progress` | 5s |
-| `use-garden.ts` → `onSnapshot(gardenPhasesCollection)` | `GET /api/admin/garden/phases` | 10s |
-| `use-garden.ts` → `onSnapshot(gardenLevelsCollection)` | `GET /api/admin/garden/levels` | 10s |
-| `use-cues.ts` → `onSnapshot(gameCuesCollection)` | `GET /api/admin/cues` | 3s |
+| `use-children.ts` → `onSnapshot(childrenCollection)` | `GET /api/admin/children` | 2s |
+| `use-jailbreak.ts` → `onSnapshot(jailbreakThemesCollection)` | `GET /api/admin/jailbreak/themes` | 2s |
+| `use-jailbreak.ts` → `onSnapshot(jailbreakMatchesCollection)` | `GET /api/admin/jailbreak/matches` | 2s |
+| `use-child-progress.ts` → `onSnapshot(sectionProgressCollection)` | `GET /api/game/progress` | 2s |
+| `use-garden.ts` → `onSnapshot(gardenPhasesCollection)` | `GET /api/admin/garden/phases` | 5s |
+| `use-garden.ts` → `onSnapshot(gardenLevelsCollection)` | `GET /api/admin/garden/levels` | 5s |
+| `use-cues.ts` → `onSnapshot(gameCuesCollection)` | `GET /api/admin/cues` | 2.5s |
 
 ### 3.2 Polling Hook Pattern
 
