@@ -968,14 +968,14 @@ function TextPromptInput({
 }) {
     return (
         <div className="space-y-2">
-            <Label className="text-sm uppercase text-foreground/70">Type your prompt</Label>
+            <Label className="text-sm uppercase text-foreground/70">PROMPT</Label>
             <textarea
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 disabled={disabled}
                 className="w-full rounded-md border-4 border-foreground bg-secondary-background px-3 py-3 text-base font-semibold shadow-shadow outline-none focus:-translate-y-0.5 focus:border-foreground"
                 rows={4}
-                placeholder="Describe the image you want..."
+                placeholder="描述你要生成的圖片..."
             />
         </div>
     );
