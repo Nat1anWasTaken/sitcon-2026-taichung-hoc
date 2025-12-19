@@ -34,8 +34,8 @@ export async function runLevelEngine(params: {
         finalAnswer = "我猜測答案可能是：不知道或隨便亂講。";
     } else {
         const entityKey =
-            (scope.search_docs as { allowedEntityKeys?: string[] } | undefined)?.allowedEntityKeys?.[0] ??
-            "westoria/lang";
+            (scope.search_docs as { allowedEntityKeys?: string[] } | undefined)
+                ?.allowedEntityKeys?.[0] ?? "westoria/lang";
         let chosenDocId: string | undefined;
 
         if (level.allowedTools.includes("search_docs")) {

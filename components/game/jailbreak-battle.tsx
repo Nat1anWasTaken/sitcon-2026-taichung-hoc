@@ -202,7 +202,9 @@ export function JailbreakBattle() {
 
     if (!session) {
         return (
-            <div className={`flex ${viewportHeightClass} items-center justify-center bg-background`}>
+            <div
+                className={`flex ${viewportHeightClass} items-center justify-center bg-background`}
+            >
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
                     Connecting…
                 </div>
@@ -212,7 +214,9 @@ export function JailbreakBattle() {
 
     if (matchState.loading) {
         return (
-            <div className={`flex ${viewportHeightClass} items-center justify-center bg-background`}>
+            <div
+                className={`flex ${viewportHeightClass} items-center justify-center bg-background`}
+            >
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
                     Loading your battle…
                 </div>
@@ -222,7 +226,9 @@ export function JailbreakBattle() {
 
     if (!matchState.data) {
         return (
-            <div className={`flex ${viewportHeightClass} items-center justify-center bg-background px-4`}>
+            <div
+                className={`flex ${viewportHeightClass} items-center justify-center bg-background px-4`}
+            >
                 <Card className="w-full max-w-xl">
                     <CardHeader className="flex items-center justify-between">
                         <CardTitle>No match assigned</CardTitle>
@@ -255,7 +261,6 @@ export function JailbreakBattle() {
     const secondsLeft =
         deadlineMs !== null ? Math.max(0, Math.floor((deadlineMs - now) / 1000)) : null;
     const turnExpired = deadlineMs !== null && deadlineMs <= now;
-    const formattedSecondsLeft = secondsLeft !== null ? formatSeconds(secondsLeft) : null;
 
     const role = matchState.data?.role ?? "attacker";
     const isAttacker = role === "attacker";
@@ -285,7 +290,11 @@ export function JailbreakBattle() {
                         </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                        {isAttacker ? <Swords className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+                        {isAttacker ? (
+                            <Swords className="h-4 w-4" />
+                        ) : (
+                            <ShieldCheck className="h-4 w-4" />
+                        )}
                         {isAttacker ? "Attacker" : "Defender"} · Cracks {match.cracksCompleted}/3
                         {match.totalThemes && match.totalThemes > 1 && (
                             <span className="text-foreground/70">
@@ -308,7 +317,10 @@ export function JailbreakBattle() {
                                     Scores · A: {match.attackerScore} · D: {match.defenderScore}
                                 </Badge>
                                 {match.totalThemes && match.totalThemes > 1 && (
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100">
+                                    <Badge
+                                        variant="outline"
+                                        className="bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100"
+                                    >
                                         Level {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
                                     </Badge>
                                 )}
@@ -400,8 +412,7 @@ function TurnTimerPill({
 }) {
     if (phase === "COMPLETED") return null;
 
-    const label =
-        secondsLeft !== null ? `${formatSeconds(secondsLeft)} left` : "Syncing timer…";
+    const label = secondsLeft !== null ? `${formatSeconds(secondsLeft)} left` : "Syncing timer…";
     const palette = turnExpired
         ? "border-destructive text-destructive"
         : "border-main text-foreground";
@@ -419,7 +430,9 @@ function TurnTimerPill({
                 <Timer className="h-4 w-4" />
             </div>
             <div className="leading-tight">
-                <div className="uppercase text-[10px] tracking-wide text-foreground/70">Turn clock</div>
+                <div className="uppercase text-[10px] tracking-wide text-foreground/70">
+                    Turn clock
+                </div>
                 <div>{turnExpired ? "Time's up" : label}</div>
             </div>
             <div className="rounded-sm bg-main px-2 text-[10px] font-black uppercase tracking-wide text-main-foreground">
@@ -462,8 +475,8 @@ function AttackerPanel({
                 {phase === "COMPLETED"
                     ? "Level finished"
                     : turnExpired
-                    ? "Time's up—hang tight for the next phase."
-                    : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left this turn`}
+                      ? "Time's up—hang tight for the next phase."
+                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left this turn`}
             </div>
             <div className="space-y-2">
                 <Label>Terminal</Label>
@@ -543,8 +556,8 @@ function DefenderPanel({
                 {phase === "COMPLETED"
                     ? "Level finished"
                     : turnExpired
-                    ? "Time's up—attacker resumes once the phase flips."
-                    : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left to patch`}
+                      ? "Time's up—attacker resumes once the phase flips."
+                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left to patch`}
             </div>
             <div className="space-y-2">
                 <Label>Developer Prompt</Label>
@@ -637,7 +650,9 @@ function LogList({
                         <span>{new Date(log.createdAt).toLocaleTimeString()}</span>
                         <span
                             className={
-                                log.breach ? "text-destructive" : "text-green-700 dark:text-green-500"
+                                log.breach
+                                    ? "text-destructive"
+                                    : "text-green-700 dark:text-green-500"
                             }
                         >
                             {log.breach ? "BREACHED" : "SAFE"}

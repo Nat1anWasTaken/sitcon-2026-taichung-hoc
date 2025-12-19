@@ -7,14 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { adminFirestore } from "@/lib/firebase-admin";
-import { AgentLevel, AgentStage } from "@/lib/server/agent-types";
+import { AgentLevel, AgentStage, AgentStageType } from "@/lib/server/agent-types";
 
 async function fetchData() {
     if (!adminFirestore) throw new Error("Missing admin credentials");
     const stagesSnap = await adminFirestore.collection("agentStages").get();
-    const stages: AgentStage[] = stagesSnap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentStage) }));
+    const stages: AgentStage[] = stagesSnap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<AgentStage, "id">),
+    }));
     const levelsSnap = await adminFirestore.collection("agentLevels").orderBy("order", "asc").get();
-    const levels: AgentLevel[] = levelsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentLevel) }));
+    const levels: AgentLevel[] = levelsSnap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<AgentLevel, "id">),
+    }));
     return { stages, levels };
 }
 
@@ -22,7 +28,7 @@ async function createLevel(formData: FormData) {
     "use server";
     if (!adminFirestore) throw new Error("Missing admin credentials");
     const id = String(formData.get("id") ?? "").trim();
-    const stageType = String(formData.get("stageType") ?? "").trim();
+    const stageType = String(formData.get("stageType") ?? "").trim() as AgentStageType;
     const order = Number(formData.get("order") ?? 1);
     const briefing = String(formData.get("briefing") ?? "");
     const taskPrompt = String(formData.get("taskPrompt") ?? "");
@@ -43,7 +49,7 @@ async function createLevel(formData: FormData) {
 }
 
 export default async function AgentLevelsPage() {
-    const { stages, levels } = await fetchData();
+    const { levels } = await fetchData();
     return (
         <div className="space-y-6">
             <Card className="border-4 border-foreground bg-secondary-background shadow-shadow">
@@ -92,7 +98,12 @@ export default async function AgentLevelsPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="order">Order</Label>
-                            <Input name="order" id="order" type="number" defaultValue={levels.length + 1} />
+                            <Input
+                                name="order"
+                                id="order"
+                                type="number"
+                                defaultValue={levels.length + 1}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="briefing">Briefing</Label>

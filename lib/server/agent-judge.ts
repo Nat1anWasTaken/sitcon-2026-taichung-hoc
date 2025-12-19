@@ -11,7 +11,7 @@ export type JudgeResult = {
 
 export function judgeExact(expected: AgentLevelExpected, answer: string): JudgeResult {
     const canonical = typeof expected.canonicalAnswer === "string" ? expected.canonicalAnswer : "";
-    const passed = canonical && answer.trim() === canonical.trim();
+    const passed = Boolean(canonical && answer.trim() === canonical.trim());
     return {
         passed,
         failureReason: passed ? undefined : "WRONG_ANSWER",
@@ -31,7 +31,9 @@ export function judgeReferee(expected: AgentLevelExpected, answer: string): Judg
     const needsDoc = criteria.includes("doc");
     const passed =
         answer.trim().length > 0 &&
-        (!needsDoc || answer.toLowerCase().includes("doc") || answer.toLowerCase().includes("docid"));
+        (!needsDoc ||
+            answer.toLowerCase().includes("doc") ||
+            answer.toLowerCase().includes("docid"));
     return { passed, failureReason: passed ? undefined : "WRONG_ANSWER" };
 }
 

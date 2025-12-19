@@ -57,9 +57,8 @@ export async function POST(req: NextRequest) {
         });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Attack failed";
-        const status = message.startsWith("Section 2") || message.startsWith("Complete Section 1")
-            ? 403
-            : 400;
+        const status =
+            message.startsWith("Section 2") || message.startsWith("Complete Section 1") ? 403 : 400;
         return new Response(JSON.stringify({ error: message }), {
             status,
             headers: { "Content-Type": "application/json" },

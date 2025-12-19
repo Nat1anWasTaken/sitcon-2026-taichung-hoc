@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { onSnapshot, query } from "firebase/firestore";
 
-import {
-    jailbreakMatchesCollection,
-    jailbreakThemesCollection,
-} from "@/lib/collections";
+import { jailbreakMatchesCollection, jailbreakThemesCollection } from "@/lib/collections";
 import { JailbreakMatch, JailbreakTheme } from "@/lib/jailbreak-types";
 
 type ThemeState = {

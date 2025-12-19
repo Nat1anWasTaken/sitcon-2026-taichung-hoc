@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Timestamp } from "firebase-admin/firestore";
 
 import { AgentLevel } from "@/lib/server/agent-types";
 import { runLevelEngine } from "@/lib/server/agent-engine";
-import { listAgentStages, listAgentLevelsByStage, recordAgentRun, updateBestForLevel } from "@/lib/server/agent-store";
+import {
+    listAgentStages,
+    listAgentLevelsByStage,
+    recordAgentRun,
+    updateBestForLevel,
+} from "@/lib/server/agent-store";
 import { getAgentProgress, saveAgentProgress } from "@/lib/server/agent-progress";
 import { listActiveCues } from "@/lib/server/cues";
 import { requireChildSession } from "@/lib/server/session";
@@ -87,8 +93,8 @@ export async function POST(req: NextRequest) {
         childId: session.childId,
         levelId: level.id,
         stageType: level.stageType,
-        startedAt: undefined as unknown as any, // recordAgentRun will set server timestamps
-        finishedAt: undefined as unknown as any,
+        startedAt: Timestamp.now(), // recordAgentRun will set server timestamps
+        finishedAt: undefined,
         passed: engine.passed,
         finalAnswer: engine.finalAnswer,
         finalAnswerJson: engine.finalAnswerJson as Record<string, unknown> | null | undefined,

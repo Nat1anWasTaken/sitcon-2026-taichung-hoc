@@ -23,8 +23,7 @@ type ChatMessage =
     | {
           role: "system" | "user" | "assistant";
           content: Array<
-              | { type: "text"; text: string }
-              | { type: "image_url"; image_url: { url: string } }
+              { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }
           >;
       };
 
@@ -37,7 +36,7 @@ type ChatOptions = {
         | { type: "json_object" }
         | {
               type: "json_schema";
-              json_schema: { name: string; schema: Record<string, any>; strict?: boolean };
+              json_schema: { name: string; schema: Record<string, unknown>; strict?: boolean };
           };
 };
 
@@ -183,7 +182,10 @@ export async function generateGameImage(prompt: string) {
     }
 
     if (!base64) {
-        console.error("OpenRouter image gen error. Completion:", JSON.stringify(completion, null, 2));
+        console.error(
+            "OpenRouter image gen error. Completion:",
+            JSON.stringify(completion, null, 2)
+        );
         throw new Error("No image returned from OpenRouter");
     }
 
@@ -360,7 +362,7 @@ export async function* streamJailbreakReply({
                         if (parsed.usage?.total_tokens) {
                             tokensUsed = parsed.usage.total_tokens;
                         }
-                    } catch (e) {
+                    } catch {
                         // Skip invalid JSON
                     }
                 }

@@ -94,7 +94,7 @@ const levels: AgentLevel[] = [
         stageType: "DEFENSE",
         order: 7,
         briefing: "資料有新舊版本，請輸出 JSON 指定欄位。",
-        taskPrompt: "請產出 JSON：{\"language\": string, \"docId\": string, \"asOf\": string}",
+        taskPrompt: '請產出 JSON：{"language": string, "docId": string, "asOf": string}',
         allowedTools: ["search_docs", "read_doc", "query_fact"],
         toolScopes: {
             search_docs: { allowedEntityKeys: ["westoria/lang"], maxResults: 4 },

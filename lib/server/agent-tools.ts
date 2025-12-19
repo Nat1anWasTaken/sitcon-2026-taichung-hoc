@@ -81,7 +81,10 @@ export async function readDoc(
 export async function queryFact(
     entityKey: string,
     scope?: ToolScope
-): Promise<{ events: ToolExecution[]; candidates: Array<{ value: unknown; asOf?: string; docId?: string }> }> {
+): Promise<{
+    events: ToolExecution[];
+    candidates: Array<{ value: unknown; asOf?: string; docId?: string }>;
+}> {
     enforceEntity(scope, entityKey);
     const docs = await listKnowledgeDocsForEntity(entityKey);
     const candidates = docs.map((d) => ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Rabbit, Shield, Sword, WandSparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";

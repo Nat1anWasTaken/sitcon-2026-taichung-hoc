@@ -1,6 +1,15 @@
 "use client";
 
-import { Timestamp, addDoc, deleteDoc, getDoc, getDocs, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
+import {
+    Timestamp,
+    addDoc,
+    deleteDoc,
+    getDoc,
+    getDocs,
+    serverTimestamp,
+    updateDoc,
+    writeBatch,
+} from "firebase/firestore";
 
 import {
     childDoc,
