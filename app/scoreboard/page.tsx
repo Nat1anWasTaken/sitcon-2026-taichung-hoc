@@ -196,7 +196,7 @@ export default function ScoreboardPage() {
 
                 <Tabs defaultValue="garden" className="w-full">
                     <TabsList className="flex w-full flex-wrap gap-2 bg-secondary-background">
-                        <TabsTrigger value="garden">第 1 部分 · 花園創建者</TabsTrigger>
+                        <TabsTrigger value="garden">第 1 部分 · 圖片生成</TabsTrigger>
                         <TabsTrigger value="jailbreak">第 2 部分 · 文字攻防對戰</TabsTrigger>
                     </TabsList>
 

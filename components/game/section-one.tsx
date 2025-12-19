@@ -369,7 +369,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <Sparkles className="h-4 w-4" />
-                        {config?.title ?? "花園創建者"}: {phaseConfig.title} · Level{" "}
+                        {config?.title ?? "第一單元"}: {phaseConfig.title} · Level{" "}
                         {progress.currentLevel}
                     </div>
                 </header>
@@ -495,7 +495,7 @@ function SectionCompleteOverlay({ open }: { open: boolean }) {
                         單元完成
                     </div>
                     <div className="space-y-4 text-center">
-                        <p className="text-2xl font-black text-foreground">你已通過花園創建者！</p>
+                        <p className="text-2xl font-black text-foreground">你已通過第一單元！</p>
                         <p className="text-base font-semibold text-foreground/80">
                             做得好。我們即將載入下一單元 — 請保持此分頁開啟，並注意教練指示。
                         </p>

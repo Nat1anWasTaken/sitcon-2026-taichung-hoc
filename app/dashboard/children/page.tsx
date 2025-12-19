@@ -441,7 +441,7 @@ function ProgressSheet({
 
     const sections = useMemo(() => {
         if (phases.length === 0) return [];
-        return [buildSectionConfigFromRecords(SECTION_ONE_ID, "花園創建者", phases, levels)];
+        return [buildSectionConfigFromRecords(SECTION_ONE_ID, "圖片生成", phases, levels)];
     }, [phases, levels]);
 
     const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);

@@ -68,7 +68,7 @@ export function GameHub() {
 
     const stageLabel = useMemo(() => {
         if (stage === "section-2") return "第二單元 · 文字攻防對戰";
-        return "第一單元 · 花園創建者";
+        return "第一單元";
     }, [stage]);
 
     if (loading) {
