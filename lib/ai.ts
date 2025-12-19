@@ -212,12 +212,7 @@ export async function evaluateImageMatch(
                 content: [
                     {
                         type: "text",
-                        text: [
-                            "You are grading an image generation task for a child.",
-                            `Target description: "${target}".`,
-                            'Return JSON: {"verdict":"yes"|"no","reason":"short, kid-friendly sentence"}.',
-                            'Say "yes" only if the image clearly matches.',
-                        ].join("\n"),
+                        text: [target].join("\n"),
                     },
                     { type: "image_url", image_url: { url: dataUrl } },
                 ],

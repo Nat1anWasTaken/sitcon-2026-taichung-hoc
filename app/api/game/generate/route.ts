@@ -55,9 +55,11 @@ export async function POST(req: NextRequest) {
     }
 
     const target = activeLevel.target || progress.lastTarget || "the target";
+    // Use the hint as the "ground truth" for evaluation if available, otherwise fall back to the displayed target.
+    const evaluationTarget = activeLevel.hint || target;
 
     const { image } = await generateGameImage(prompt);
-    const evaluation = await evaluateImageMatch(image, target);
+    const evaluation = await evaluateImageMatch(image, evaluationTarget);
     const imageUrl = await uploadGameImageToStorage(image, session.childId, sectionId);
 
     const asPhaseId = (value: number): PhaseId => Math.min(Math.max(value, 1), 3) as PhaseId;

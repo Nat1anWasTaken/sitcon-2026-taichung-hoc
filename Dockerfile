@@ -19,7 +19,11 @@ RUN \
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+<<<<<<< HEAD
 COPY --from=deps /app/node_modules ./
+=======
+COPY --from=deps /app/node_modules ./node_modules
+>>>>>>> a3dfc19 (chore: localize game content and improve image evaluation)
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
