@@ -21,7 +21,7 @@ const jailbreakTurnSchema = new Schema<IJailbreakTurn, JailbreakTurnModelType>(
     {
         _id: { type: String, required: true },
         id: { type: String, required: true },
-        matchId: { type: String, required: true, index: true },
+        matchId: { type: String, required: true },
         attackerPrompt: { type: String, required: true },
         aiResponse: { type: String, required: true },
         breach: { type: Boolean, required: true },

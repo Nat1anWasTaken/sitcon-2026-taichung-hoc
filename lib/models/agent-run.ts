@@ -63,7 +63,7 @@ const agentRunSchema = new Schema<IAgentRun, AgentRunModelType>(
         finishedAt: { type: Date },
         passed: { type: Boolean, required: true },
         finalAnswer: { type: String },
-        finalAnswerJson: { type: Map, of: Schema.Types.Mixed, default: null },
+        finalAnswerJson: { type: Schema.Types.Mixed, default: null },
         usage: { type: agentRunUsageSchema },
         steps: { type: Number, required: true },
         toolCallsCount: { type: Number, required: true },

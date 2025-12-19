@@ -36,7 +36,6 @@ const childSchema = new Schema<IChild, ChildModelType>(
 );
 
 // Create indexes
-childSchema.index({ seatNumber: 1 }, { unique: true });
 childSchema.index({ childId: 1 });
 
 // Export model (handle hot reload)
