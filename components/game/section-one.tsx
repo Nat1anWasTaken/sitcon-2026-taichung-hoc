@@ -59,6 +59,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
         imageUrl: string | null;
     }>({ open: false, match: null, feedback: null, imageUrl: null });
     const completedNotifiedRef = useRef(false);
+    const lastLevelRef = useRef<{ phase: number; level: number } | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -94,14 +95,26 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
 
             if (progRes.ok) {
                 const progData = await progRes.json();
-                setProgress(progData.progress);
-                const serverPrompt = progData.progress?.lastPrompt ?? "";
-                // Only apply server prompt when it actually changed to avoid clobbering local edits
-                if (serverPrompt !== lastServerPromptRef.current) {
-                    setTypedPrompt(serverPrompt);
-                    lastServerPromptRef.current = serverPrompt;
+                const newProgress = progData.progress;
+
+                // Detect if level or phase changed
+                const levelChanged =
+                    lastLevelRef.current &&
+                    (lastLevelRef.current.phase !== newProgress?.currentPhase ||
+                        lastLevelRef.current.level !== newProgress?.currentLevel);
+
+                setProgress(newProgress);
+
+                // Only restore image and prompt if level hasn't changed
+                if (!levelChanged) {
+                    const serverPrompt = newProgress?.lastPrompt ?? "";
+                    // Only apply server prompt when it actually changed to avoid clobbering local edits
+                    if (serverPrompt !== lastServerPromptRef.current) {
+                        setTypedPrompt(serverPrompt);
+                        lastServerPromptRef.current = serverPrompt;
+                    }
+                    setImageUrl(newProgress?.lastImageUrl ?? null);
                 }
-                setImageUrl(progData.progress?.lastImageUrl ?? null);
             }
 
             if (cuesRes.ok) {
@@ -223,11 +236,39 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
         return arr;
     }, [mergedLevelConfig?.blocks]);
 
+    // Only pre-fill blocks on very first load, not on level changes
+    const initialLoadRef = useRef(true);
     useEffect(() => {
-        if (phaseConfig?.mode === "blocks" && shuffledBlocks.length) {
+        if (initialLoadRef.current && phaseConfig?.mode === "blocks" && shuffledBlocks.length) {
             setSelectedBlocks(shuffledBlocks.slice(0, 2));
+            initialLoadRef.current = false;
         }
-    }, [phaseConfig?.mode, mergedLevelConfig?.id, shuffledBlocks]);
+    }, [phaseConfig?.mode, shuffledBlocks]);
+
+    // Reset image and prompt when level or phase changes
+    useEffect(() => {
+        if (!progress) return;
+
+        // Check if level or phase actually changed
+        const currentLevel = { phase: progress.currentPhase, level: progress.currentLevel };
+        const hasChanged =
+            !lastLevelRef.current ||
+            lastLevelRef.current.phase !== currentLevel.phase ||
+            lastLevelRef.current.level !== currentLevel.level;
+
+        if (hasChanged) {
+            // Reset UI when moving to a new level/phase
+            if (lastLevelRef.current) {
+                // Only reset if this isn't the first load
+                setImageUrl(null);
+                setTypedPrompt("");
+                setSelectedBlocks([]);
+                lastServerPromptRef.current = null;
+            }
+            // Update the tracked level
+            lastLevelRef.current = currentLevel;
+        }
+    }, [progress?.currentLevel, progress?.currentPhase]);
 
     const handleGenerate = async () => {
         if (!phaseConfig || !mergedLevelConfig) return;
