@@ -58,7 +58,7 @@ const agentLevelSchema = new Schema<IAgentLevel, AgentLevelModelType>(
         briefing: { type: String, required: true },
         taskPrompt: { type: String, required: true },
         allowedTools: { type: [String], required: true },
-        toolScopes: { type: Map, of: Schema.Types.Mixed },
+        toolScopes: { type: Schema.Types.Mixed },
         expected: { type: agentLevelExpectedSchema, required: true },
         maxSteps: { type: Number },
         isActive: { type: Boolean, required: true, default: true },
