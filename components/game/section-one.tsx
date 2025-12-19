@@ -34,6 +34,20 @@ type SectionOneProps = {
     onSectionComplete?: () => void;
 };
 
+const normalizePromptForMatch = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+const isPromptCopyingTarget = (prompt: string, target: string) => {
+    if (!prompt || !target) return false;
+    const normalizedPrompt = normalizePromptForMatch(prompt);
+    const normalizedTarget = normalizePromptForMatch(target);
+    if (!normalizedTarget) return false;
+    return normalizedPrompt.includes(normalizedTarget);
+};
+
 export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     const router = useRouter();
     const [session, setSession] = useState<ChildSession | null>(null);
@@ -288,6 +302,20 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                 open: true,
                 match: false,
                 feedback: "請先輸入一些文字！",
+                imageUrl,
+            });
+            return;
+        }
+
+        if (
+            phaseConfig.mode === "text" &&
+            (progress.currentPhase === 2 || progress.currentPhase === 3) &&
+            isPromptCopyingTarget(prompt, mergedLevelConfig.target)
+        ) {
+            setResultOverlay({
+                open: true,
+                match: false,
+                feedback: "請用自己的話描述，不能直接複製目標標題。",
                 imageUrl,
             });
             return;
