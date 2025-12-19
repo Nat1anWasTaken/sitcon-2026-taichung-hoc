@@ -16,14 +16,16 @@ function pickLatestTrusted(docs: Awaited<ReturnType<typeof searchDocs>>["docs"])
     const trusted = docs.filter((d) => d.sourceTier === "trusted");
     const pool = trusted.length ? trusted : docs;
     return pool.sort((a, b) => {
+        const aVal = a.publishedAt as any;
+        const bVal = b.publishedAt as any;
         const aDate =
-            a.publishedAt instanceof Date
-                ? a.publishedAt
-                : a.publishedAt?.toDate?.() ?? new Date(0);
+            aVal instanceof Date
+                ? aVal
+                : aVal?.toDate?.() ?? new Date(0);
         const bDate =
-            b.publishedAt instanceof Date
-                ? b.publishedAt
-                : b.publishedAt?.toDate?.() ?? new Date(0);
+            bVal instanceof Date
+                ? bVal
+                : bVal?.toDate?.() ?? new Date(0);
         return bDate.getTime() - aDate.getTime();
     })[0];
 }

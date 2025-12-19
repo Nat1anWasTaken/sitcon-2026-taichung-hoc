@@ -10,9 +10,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "childId required" }, { status: 400 });
     }
 
+    let doc: IChildProgress | null = null;
+
     try {
       await connectToDatabase();
-      const doc = await ChildProgressModel.findById(childId).lean<IChildProgress | null>();
+      doc = await ChildProgressModel.findById(childId).lean<IChildProgress | null>();
     } catch (error) {
         console.error("Database error fetching progress:", error);
         return NextResponse.json({ error: "Failed to fetch progress" }, { status: 500 });
