@@ -6,27 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { adminFirestore } from "@/lib/firebase-admin";
+import { connectToDatabase } from "@/lib/mongodb";
+import { AgentLevelModel, IAgentLevel } from "@/lib/models/agent-level";
+import { AgentStageModel, IAgentStage } from "@/lib/models/agent-stage";
 import { AgentLevel, AgentStage, AgentStageType } from "@/lib/server/agent-types";
 
 async function fetchData() {
-    if (!adminFirestore) throw new Error("Missing admin credentials");
-    const stagesSnap = await adminFirestore.collection("agentStages").get();
-    const stages: AgentStage[] = stagesSnap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<AgentStage, "id">),
-    }));
-    const levelsSnap = await adminFirestore.collection("agentLevels").orderBy("order", "asc").get();
-    const levels: AgentLevel[] = levelsSnap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<AgentLevel, "id">),
-    }));
+    await connectToDatabase();
+    const [stageDocs, levelDocs] = await Promise.all([
+        AgentStageModel.find({}).sort({ order: 1 }).lean<IAgentStage[]>(),
+        AgentLevelModel.find({}).sort({ order: 1 }).lean<IAgentLevel[]>(),
+    ]);
+    const stages = stageDocs.map((doc) => ({ ...(doc as AgentStage), id: doc.id ?? doc._id }));
+    const levels = levelDocs.map((doc) => ({ ...(doc as AgentLevel), id: doc.id ?? doc._id }));
     return { stages, levels };
 }
 
 async function createLevel(formData: FormData) {
     "use server";
-    if (!adminFirestore) throw new Error("Missing admin credentials");
     const id = String(formData.get("id") ?? "").trim();
     const stageType = String(formData.get("stageType") ?? "").trim() as AgentStageType;
     const order = Number(formData.get("order") ?? 1);
@@ -44,7 +41,15 @@ async function createLevel(formData: FormData) {
         maxSteps: 5,
         isActive: true,
     };
-    await adminFirestore.collection("agentLevels").doc(id).set(payload, { merge: true });
+    await connectToDatabase();
+    await AgentLevelModel.updateOne(
+        { _id: id },
+        {
+            $set: { ...payload, id },
+            $setOnInsert: { _id: id },
+        },
+        { upsert: true }
+    );
     revalidatePath("/dashboard/agent/levels");
 }
 

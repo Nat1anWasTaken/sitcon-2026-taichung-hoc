@@ -38,7 +38,7 @@ const cueCatalog = [
 ];
 
 export default function CuesPage() {
-    const { cues, loading } = useCues();
+    const { cues, loading, refresh } = useCues();
     const [busyId, setBusyId] = useState<string | null>(null);
 
     const getCueActive = (id: string) => cues.find((c) => c.id === id)?.active ?? false;
@@ -47,6 +47,7 @@ export default function CuesPage() {
         setBusyId(id);
         try {
             await setCueActive(id, active);
+            await refresh();
         } finally {
             setBusyId(null);
         }

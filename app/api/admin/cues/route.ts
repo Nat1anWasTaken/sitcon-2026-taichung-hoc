@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { adminFirestore } from "@/lib/firebase-admin";
 import { GameCue } from "@/lib/game-types";
+import { connectToDatabase } from "@/lib/mongodb";
+import { GameCueModel, IGameCue } from "@/lib/models/game-cue";
 
 export async function GET() {
-    if (!adminFirestore) {
-        return NextResponse.json({ error: "Server missing admin credentials" }, { status: 500 });
-    }
-
-    const snap = await adminFirestore.collection("gameCues").orderBy("updatedAt", "desc").get();
-    const cues = snap.docs.map((doc) => {
-        const data = doc.data() as GameCue;
-        return { ...data, id: doc.id };
+    await connectToDatabase();
+    const docs = await GameCueModel.find({}).sort({ updatedAt: -1 }).lean<IGameCue[]>();
+    const cues = docs.map((doc) => {
+        const { _id, ...rest } = doc as IGameCue & { _id?: string };
+        const id = rest.id ?? _id ?? "";
+        return { ...(rest as unknown as GameCue), id };
     });
 
     return NextResponse.json({ cues });

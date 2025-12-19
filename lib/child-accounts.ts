@@ -1,8 +1,4 @@
 "use client";
-
-import { getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-
-import { childBySeatQuery, childDoc } from "./collections";
 import { hashPassword, generateSalt } from "./passwords";
 import { ChildAccount } from "./types";
 
@@ -13,6 +9,21 @@ type CreateChildInput = {
     name?: string;
 };
 
+async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(url, {
+        ...init,
+        headers: {
+            "Content-Type": "application/json",
+            ...(init?.headers ?? {}),
+        },
+    });
+    if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || "Request failed");
+    }
+    return (await res.json()) as T;
+}
+
 export async function createChildAccount({
     childId,
     seatNumber,
@@ -22,25 +33,30 @@ export async function createChildAccount({
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
 
-    const payload: Omit<ChildAccount, "lastLoginAt"> = {
+    const payload = {
         childId,
         seatNumber,
         passwordSalt: salt,
         passwordHash,
         name: name ?? null,
-        createdAt: serverTimestamp() as unknown as ChildAccount["createdAt"],
-        updatedAt: serverTimestamp() as unknown as ChildAccount["updatedAt"],
-        status: "active",
+        status: "active" as const,
     };
 
-    await setDoc(childDoc(childId), payload);
-    return payload;
+    await apiRequest("/api/admin/children", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+    return {
+        ...payload,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    };
 }
 
 export async function updateChildName(childId: string, name: string) {
-    await updateDoc(childDoc(childId), {
-        name,
-        updatedAt: serverTimestamp(),
+    await apiRequest(`/api/admin/children/${encodeURIComponent(childId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
     });
 }
 
@@ -48,10 +64,9 @@ export async function resetChildPassword(childId: string, password: string) {
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
 
-    await updateDoc(childDoc(childId), {
-        passwordSalt: salt,
-        passwordHash,
-        updatedAt: serverTimestamp(),
+    await apiRequest(`/api/admin/children/${encodeURIComponent(childId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ passwordSalt: salt, passwordHash }),
     });
 }
 
@@ -59,21 +74,26 @@ export async function setChildStatus(
     childId: string,
     status: Exclude<ChildAccount["status"], undefined>
 ) {
-    await updateDoc(childDoc(childId), {
-        status,
-        updatedAt: serverTimestamp(),
+    await apiRequest(`/api/admin/children/${encodeURIComponent(childId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
     });
 }
 
 export async function verifyChildPassword(childId: string, password: string) {
-    const snap = await getDoc(childDoc(childId));
-    if (!snap.exists()) return false;
-    const data = snap.data();
-    const hash = await hashPassword(password, data.passwordSalt);
-    return hash === data.passwordHash;
+    const data = await apiRequest<{ ok: boolean }>(
+        `/api/admin/children/${encodeURIComponent(childId)}/verify`,
+        {
+            method: "POST",
+            body: JSON.stringify({ password }),
+        }
+    );
+    return Boolean(data.ok);
 }
 
 export async function childBySeat(seatNumber: number) {
-    const qSnap = await getDocs(childBySeatQuery(seatNumber));
-    return qSnap.docs[0]?.data() ?? null;
+    const data = await apiRequest<{ child: ChildAccount | null }>(
+        `/api/admin/children/seat?seatNumber=${encodeURIComponent(seatNumber)}`
+    );
+    return data.child ?? null;
 }

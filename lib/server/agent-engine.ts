@@ -15,7 +15,17 @@ export type AgentEngineResult = {
 function pickLatestTrusted(docs: Awaited<ReturnType<typeof searchDocs>>["docs"]) {
     const trusted = docs.filter((d) => d.sourceTier === "trusted");
     const pool = trusted.length ? trusted : docs;
-    return pool.sort((a, b) => b.publishedAt.toMillis() - a.publishedAt.toMillis())[0];
+    return pool.sort((a, b) => {
+        const aDate =
+            a.publishedAt instanceof Date
+                ? a.publishedAt
+                : a.publishedAt?.toDate?.() ?? new Date(0);
+        const bDate =
+            b.publishedAt instanceof Date
+                ? b.publishedAt
+                : b.publishedAt?.toDate?.() ?? new Date(0);
+        return bDate.getTime() - aDate.getTime();
+    })[0];
 }
 
 export async function runLevelEngine(params: {

@@ -1,15 +1,9 @@
-import { Timestamp } from "firebase-admin/firestore";
-
 import { allSections } from "@/lib/game/config";
 import { ScoreboardRow, ScoreboardSection, ScoreboardSnapshot } from "@/lib/scoreboard-types";
-import { ChildAccount } from "@/lib/types";
 
-import { adminFirestore } from "../firebase-admin";
-
-function assertAdminDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
-}
+import { connectToDatabase } from "../mongodb";
+import { ChildProgressModel, IChildProgress, ISectionProgress } from "../models/child-progress";
+import { ChildModel, IChild } from "../models/child";
 
 type ProgressDoc = {
     sectionId?: string;
@@ -24,12 +18,12 @@ type ProgressDoc = {
     lastTarget?: string;
     lastMatch?: boolean;
     lastFeedback?: string;
-    updatedAt?: Timestamp;
+    updatedAt?: Date;
     cuesConsumed?: Record<string, boolean>;
 };
 
 function coerceProgress(sectionId: string, data?: ProgressDoc): Required<ProgressDoc> {
-    const updatedAt = data?.updatedAt ?? Timestamp.now();
+    const updatedAt = data?.updatedAt ?? new Date();
     return {
         sectionId,
         currentPhase: data?.currentPhase ?? 1,
@@ -48,37 +42,38 @@ function coerceProgress(sectionId: string, data?: ProgressDoc): Required<Progres
     };
 }
 
-export async function buildScoreboardSnapshot(): Promise<ScoreboardSnapshot> {
-    const db = assertAdminDb();
+function getSection(
+    progress: IChildProgress | null,
+    sectionId: string
+): ISectionProgress | undefined {
+    if (!progress?.sections) return undefined;
+    if (progress.sections instanceof Map) return progress.sections.get(sectionId);
+    const sections = progress.sections as unknown as Record<string, ISectionProgress>;
+    return sections[sectionId];
+}
 
-    const childrenSnap = await db.collection("children").get();
-    const children: (ChildAccount & { docId: string })[] = childrenSnap.docs.map((doc) => {
-        const data = doc.data() as ChildAccount;
-        return { ...data, docId: doc.id };
-    });
+export async function buildScoreboardSnapshot(): Promise<ScoreboardSnapshot> {
+    await connectToDatabase();
+
+    const children = await ChildModel.find({}).lean<IChild[]>();
+    const childIds = children.map((child) => child._id);
+    const progressDocs = await ChildProgressModel.find({ _id: { $in: childIds } }).lean<
+        IChildProgress[]
+    >();
+    const progressMap = new Map(progressDocs.map((doc) => [doc._id, doc]));
 
     const sections = await Promise.all(
         allSections.map(async (section) => {
             const rows = await Promise.all(
                 children.map(async (child) => {
-                    const progressSnap = await db
-                        .collection("childProgress")
-                        .doc(child.docId)
-                        .collection("sections")
-                        .doc(section.id)
-                        .get();
-
-                    const progress = coerceProgress(
-                        section.id,
-                        progressSnap.data() as ProgressDoc | undefined
-                    );
+                    const progressDoc = progressMap.get(child._id) ?? null;
+                    const sectionProgress = getSection(progressDoc, section.id);
+                    const progress = coerceProgress(section.id, sectionProgress as ProgressDoc);
                     const updatedAt =
-                        (progress.updatedAt as Timestamp | undefined)
-                            ?.toDate?.()
-                            ?.toISOString?.() ?? new Date().toISOString();
+                        progress.updatedAt?.toISOString?.() ?? new Date().toISOString();
 
                     return {
-                        childId: child.childId || child.docId,
+                        childId: child.childId || child._id,
                         seatNumber: child.seatNumber,
                         name: child.name,
                         status: child.status,

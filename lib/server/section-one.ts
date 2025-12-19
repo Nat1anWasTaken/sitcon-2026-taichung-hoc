@@ -1,57 +1,54 @@
-import { adminFirestore } from "../firebase-admin";
 import { SECTION_ONE_ID, SectionConfig, buildSectionConfigFromRecords } from "../game/config";
-
-function assertAdminDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
-}
+import { connectToDatabase } from "../mongodb";
+import { GardenPhaseModel, IGardenPhase } from "../models/garden-phase";
+import { GardenLevelModel, IGardenLevel } from "../models/garden-level";
 
 const SECTION_ONE_TITLE = "Garden Builders";
 
 export async function fetchSectionOneConfig(): Promise<{
     config: SectionConfig;
-    source: "firestore";
+    source: "mongodb";
 }> {
-    const db = assertAdminDb();
+    await connectToDatabase();
 
-    const [phasesSnap, levelsSnap] = await Promise.all([
-        db.collection("gardenPhases").orderBy("order", "asc").get(),
-        db.collection("gardenLevels").orderBy("levelNumber", "asc").get(),
+    const [phasesDocs, levelsDocs] = await Promise.all([
+        GardenPhaseModel.find({}).sort({ order: 1 }).lean<IGardenPhase[]>(),
+        GardenLevelModel.find({}).sort({ levelNumber: 1 }).lean<IGardenLevel[]>(),
     ]);
 
-    const phases = phasesSnap.docs.map((doc) => {
-        const data = doc.data();
+    const phases = phasesDocs.map((data) => {
+        const id = data.id ?? data._id;
         return {
-            id: doc.id,
-            title: data.title as string,
-            mode: (data.mode as "blocks" | "text") ?? "blocks",
-            description: (data.description as string) || undefined,
-            lockedByCue: (data.lockedByCue as string | null) || undefined,
+            id,
+            title: data.title,
+            mode: data.mode ?? "blocks",
+            description: data.description || undefined,
+            lockedByCue: data.lockedByCue || undefined,
             order: Number(data.order ?? 0),
         };
     });
 
-    const levels = levelsSnap.docs.map((doc) => {
-        const data = doc.data();
+    const levels = levelsDocs.map((data) => {
+        const id = data.id ?? data._id;
         return {
-            id: doc.id,
-            phaseId: (data.phaseId as string) || "",
+            id,
+            phaseId: data.phaseId || "",
             levelNumber: Number(data.levelNumber ?? 0),
-            target: (data.target as string) || "",
-            blocks: Array.isArray(data.blocks) ? (data.blocks as string[]) : undefined,
+            target: data.target || "",
+            blocks: Array.isArray(data.blocks) ? data.blocks : undefined,
             bonusBlocks: Array.isArray(data.bonusBlocks)
-                ? (data.bonusBlocks as string[])
+                ? data.bonusBlocks
                 : undefined,
-            hint: (data.hint as string) || undefined,
+            hint: data.hint || undefined,
         };
     });
 
     if (!phases.length || !levels.length) {
         throw new Error(
-            "Section 1 configuration is missing in Firestore. Please add gardenPhases and gardenLevels records."
+            "Section 1 configuration is missing in MongoDB. Please add gardenPhases and gardenLevels records."
         );
     }
 
     const config = buildSectionConfigFromRecords(SECTION_ONE_ID, SECTION_ONE_TITLE, phases, levels);
-    return { config, source: "firestore" };
+    return { config, source: "mongodb" };
 }

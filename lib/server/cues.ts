@@ -1,47 +1,45 @@
-import { FieldValue } from "firebase-admin/firestore";
-
-import { adminFirestore } from "../firebase-admin";
+import { connectToDatabase } from "../mongodb";
+import { GameCueModel, IGameCue } from "../models/game-cue";
 import { GameCue } from "../game-types";
 
-function assertAdminDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
-}
-
-const CUES_COLLECTION = "gameCues";
-
 export async function listActiveCues(): Promise<GameCue[]> {
-    const db = assertAdminDb();
-    const snap = await db.collection(CUES_COLLECTION).where("active", "==", true).get();
-    return snap.docs.map((d) => {
-        const data = d.data() as GameCue;
-        return { ...data, id: d.id };
+    await connectToDatabase();
+    const cues = await GameCueModel.find({ active: true }).lean<IGameCue[]>();
+    return cues.map((cue) => {
+        const { _id, ...rest } = cue;
+        return { ...rest, id: cue.id ?? _id } as unknown as GameCue;
     });
 }
 
 export async function setCueState(cueId: string, data: Partial<GameCue>) {
-    const db = assertAdminDb();
     const safeData = { ...data } as Partial<GameCue> & Record<string, unknown>;
     delete safeData.id;
-    await db
-        .collection(CUES_COLLECTION)
-        .doc(cueId)
-        .set(
-            {
-                active: false,
-                createdAt: FieldValue.serverTimestamp(),
-                updatedAt: FieldValue.serverTimestamp(),
-                ...safeData,
-                id: cueId,
+    await connectToDatabase();
+    const cueType = (safeData.type as string | undefined) ?? cueId;
+    const payload = {
+        active: safeData.active ?? false,
+        type: cueType,
+        ...safeData,
+        id: cueId,
+        updatedAt: new Date(),
+    };
+    await GameCueModel.updateOne(
+        { _id: cueId },
+        {
+            $set: payload,
+            $setOnInsert: {
+                _id: cueId,
+                createdAt: new Date(),
             },
-            { merge: true }
-        );
+        },
+        { upsert: true }
+    );
 }
 
 export async function getCue(cueId: string): Promise<GameCue | null> {
-    const db = assertAdminDb();
-    const snap = await db.collection(CUES_COLLECTION).doc(cueId).get();
-    if (!snap.exists) return null;
-    const rest = snap.data() as GameCue;
-    return { ...rest, id: snap.id };
+    await connectToDatabase();
+    const cue = await GameCueModel.findById(cueId).lean<IGameCue | null>();
+    if (!cue) return null;
+    const { _id, ...rest } = cue;
+    return { ...rest, id: cue.id ?? _id } as unknown as GameCue;
 }

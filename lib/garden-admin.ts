@@ -1,24 +1,5 @@
 "use client";
 
-import {
-    addDoc,
-    deleteDoc,
-    getDocs,
-    serverTimestamp,
-    updateDoc,
-    writeBatch,
-} from "firebase/firestore";
-
-import {
-    gardenLevelDoc,
-    gardenLevelsByPhase,
-    gardenLevelsCollection,
-    gardenPhaseDoc,
-    gardenPhasesCollection,
-} from "./collections";
-import { sectionOneSeedLevels, sectionOneSeedPhases } from "./game/config";
-import { GardenLevel, GardenPhase } from "@/lib/garden-types";
-
 type PhaseInput = {
     title: string;
     mode: "blocks" | "text";
@@ -27,32 +8,44 @@ type PhaseInput = {
     lockedByCue?: string;
 };
 
+async function apiRequest(url: string, init?: RequestInit) {
+    const res = await fetch(url, {
+        ...init,
+        headers: {
+            "Content-Type": "application/json",
+            ...(init?.headers ?? {}),
+        },
+    });
+    if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || "Request failed");
+    }
+}
+
 export async function createGardenPhase(input: PhaseInput) {
-    const payload = {
-        ...input,
-        lockedByCue: input.lockedByCue || null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    };
-    await addDoc(gardenPhasesCollection, payload as unknown as GardenPhase);
+    await apiRequest("/api/admin/garden/phases", {
+        method: "POST",
+        body: JSON.stringify({
+            ...input,
+            lockedByCue: input.lockedByCue || null,
+        }),
+    });
 }
 
 export async function updateGardenPhase(phaseId: string, input: PhaseInput) {
-    await updateDoc(gardenPhaseDoc(phaseId), {
-        ...input,
-        lockedByCue: input.lockedByCue || null,
-        updatedAt: serverTimestamp(),
+    await apiRequest(`/api/admin/garden/phases/${encodeURIComponent(phaseId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+            ...input,
+            lockedByCue: input.lockedByCue || null,
+        }),
     });
 }
 
 export async function deleteGardenPhase(phaseId: string) {
-    const batch = writeBatch(gardenPhasesCollection.firestore);
-    batch.delete(gardenPhaseDoc(phaseId));
-
-    const levels = await getDocs(gardenLevelsByPhase(phaseId));
-    levels.forEach((doc) => batch.delete(doc.ref));
-
-    await batch.commit();
+    await apiRequest(`/api/admin/garden/phases/${encodeURIComponent(phaseId)}`, {
+        method: "DELETE",
+    });
 }
 
 type LevelInput = {
@@ -65,63 +58,35 @@ type LevelInput = {
 };
 
 export async function createGardenLevel(input: LevelInput) {
-    const payload = {
-        ...input,
-        blocks: input.blocks?.filter(Boolean) ?? [],
-        bonusBlocks: input.bonusBlocks?.filter(Boolean) ?? [],
-        hint: input.hint ?? "",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    };
-    await addDoc(gardenLevelsCollection, payload as unknown as GardenLevel);
+    await apiRequest("/api/admin/garden/levels", {
+        method: "POST",
+        body: JSON.stringify({
+            ...input,
+            blocks: input.blocks?.filter(Boolean) ?? [],
+            bonusBlocks: input.bonusBlocks?.filter(Boolean) ?? [],
+            hint: input.hint ?? "",
+        }),
+    });
 }
 
 export async function updateGardenLevel(levelId: string, input: LevelInput) {
-    await updateDoc(gardenLevelDoc(levelId), {
-        ...input,
-        blocks: input.blocks?.filter(Boolean) ?? [],
-        bonusBlocks: input.bonusBlocks?.filter(Boolean) ?? [],
-        hint: input.hint ?? "",
-        updatedAt: serverTimestamp(),
+    await apiRequest(`/api/admin/garden/levels/${encodeURIComponent(levelId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+            ...input,
+            blocks: input.blocks?.filter(Boolean) ?? [],
+            bonusBlocks: input.bonusBlocks?.filter(Boolean) ?? [],
+            hint: input.hint ?? "",
+        }),
     });
 }
 
 export async function deleteGardenLevel(levelId: string) {
-    await deleteDoc(gardenLevelDoc(levelId));
+    await apiRequest(`/api/admin/garden/levels/${encodeURIComponent(levelId)}`, {
+        method: "DELETE",
+    });
 }
 
 export async function resetGardenToSeed() {
-    const batch = writeBatch(gardenPhasesCollection.firestore);
-
-    const [phasesSnap, levelsSnap] = await Promise.all([
-        getDocs(gardenPhasesCollection),
-        getDocs(gardenLevelsCollection),
-    ]);
-
-    phasesSnap.forEach((doc) => batch.delete(doc.ref));
-    levelsSnap.forEach((doc) => batch.delete(doc.ref));
-
-    const timestamp = serverTimestamp();
-
-    sectionOneSeedPhases.forEach((phase) => {
-        batch.set(gardenPhaseDoc(phase.id), {
-            ...phase,
-            lockedByCue: phase.lockedByCue || null,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-        });
-    });
-
-    sectionOneSeedLevels.forEach((level) => {
-        batch.set(gardenLevelDoc(level.id), {
-            ...level,
-            blocks: level.blocks ?? [],
-            bonusBlocks: level.bonusBlocks ?? [],
-            hint: level.hint ?? "",
-            createdAt: timestamp,
-            updatedAt: timestamp,
-        });
-    });
-
-    await batch.commit();
+    await apiRequest("/api/admin/garden/reset", { method: "POST" });
 }

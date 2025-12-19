@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Timestamp } from "firebase/firestore";
 
 type PollingOptions<T> = {
     enabled?: boolean;
@@ -18,31 +17,6 @@ type PollingState<T> = {
     error?: string;
     refetch: () => Promise<void>;
 };
-
-const isTimestampShape = (value: Record<string, unknown>) =>
-    typeof value._seconds === "number" && typeof value._nanoseconds === "number";
-
-function reviveFirestoreTimestamps<T>(value: T): T {
-    if (Array.isArray(value)) {
-        return value.map((entry) => reviveFirestoreTimestamps(entry)) as T;
-    }
-
-    if (value && typeof value === "object") {
-        const record = value as Record<string, unknown>;
-        if (isTimestampShape(record)) {
-            const millis = record._seconds * 1000 + record._nanoseconds / 1_000_000;
-            return Timestamp.fromMillis(millis) as T;
-        }
-
-        const next: Record<string, unknown> = {};
-        for (const [key, entry] of Object.entries(record)) {
-            next[key] = reviveFirestoreTimestamps(entry);
-        }
-        return next as T;
-    }
-
-    return value;
-}
 
 export function usePolling<T>(
     url: string,
@@ -92,8 +66,7 @@ export function usePolling<T>(
             }
             const payload = (await res.json()) as unknown;
             const selected = selectRef.current ? selectRef.current(payload) : (payload as T);
-            const revived = reviveFirestoreTimestamps(selected);
-            const next = transformRef.current ? transformRef.current(revived) : revived;
+            const next = transformRef.current ? transformRef.current(selected) : selected;
             setData(next);
             hasDataRef.current = true;
         } catch (err) {

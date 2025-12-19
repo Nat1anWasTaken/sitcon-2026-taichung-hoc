@@ -1,22 +1,20 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { randomUUID } from "crypto";
 
 import { generateJailbreakReply, judgeJailbreakBreach, streamJailbreakReply } from "@/lib/ai";
-import { adminFirestore } from "../firebase-admin";
 import { getCue } from "./cues";
 import { getSectionProgress } from "./progress";
-import { JailbreakMatch, JailbreakTurn, MatchPhase, PublicMatchView } from "../jailbreak-types";
-
-function assertAdminDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
-}
+import { MatchPhase, PublicMatchView } from "../jailbreak-types";
+import { connectToDatabase } from "../mongodb";
+import { IJailbreakMatch, JailbreakMatchModel } from "../models/jailbreak-match";
+import { IJailbreakTheme, JailbreakThemeModel } from "../models/jailbreak-theme";
+import { IJailbreakTurn, JailbreakTurnModel } from "../models/jailbreak-turn";
 
 const START_SECTION_TWO_CUE = "start-section-2";
 const SECTION_ONE_ID = "section-1";
 const TURN_DURATION_MS = 60_000;
 
 function buildTurnDeadline() {
-    return Timestamp.fromMillis(Date.now() + TURN_DURATION_MS);
+    return new Date(Date.now() + TURN_DURATION_MS);
 }
 
 export async function requireSectionTwoCue() {
@@ -34,17 +32,13 @@ export async function requireSectionOneComplete(childId: string) {
     }
 }
 
-const MATCH_COLLECTION = "jailbreakMatches";
-const THEMES_COLLECTION = "jailbreakThemes";
-
 async function getTotalThemeCount(): Promise<number> {
-    const db = assertAdminDb();
-    const themesSnap = await db.collection(THEMES_COLLECTION).get();
-    return themesSnap.size;
+    await connectToDatabase();
+    return JailbreakThemeModel.countDocuments();
 }
 
 async function selectNextTheme(
-    match: JailbreakMatch
+    match: IJailbreakMatch
 ): Promise<{
     themeId: string;
     themeTitle: string;
@@ -52,29 +46,17 @@ async function selectNextTheme(
     adminPrompt: string;
     breachCriteria: string;
 } | null> {
-    const db = assertAdminDb();
-    const themesSnap = await db.collection(THEMES_COLLECTION).get();
-
     const completedIds = match.completedThemeIds ?? [];
-    const availableThemes = themesSnap.docs
-        .filter((doc) => !completedIds.includes(doc.id))
-        .map((doc) => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                title: data.title as string,
-                description: data.description as string,
-                adminPrompt: data.adminPrompt as string,
-                breachCriteria: data.breachCriteria as string,
-            };
-        });
+    await connectToDatabase();
+    const themes = await JailbreakThemeModel.find({}).lean<IJailbreakTheme[]>();
+    const availableThemes = themes.filter((theme) => !completedIds.includes(theme._id));
 
     if (availableThemes.length === 0) return null;
 
     // Pick the first available theme (could randomize if desired)
     const next = availableThemes[0];
     return {
-        themeId: next.id,
+        themeId: next.id ?? next._id,
         themeTitle: next.title,
         themeDescription: next.description,
         adminPrompt: next.adminPrompt,
@@ -82,35 +64,38 @@ async function selectNextTheme(
     };
 }
 
-async function fetchMatchDoc(matchId: string): Promise<JailbreakMatch | null> {
-    const db = assertAdminDb();
-    const snap = await db.collection(MATCH_COLLECTION).doc(matchId).get();
-    if (!snap.exists) return null;
-    const rest = snap.data() as JailbreakMatch;
-    return { ...rest, id: snap.id };
+function withId<T extends { _id?: string; id?: string }>(doc: T) {
+    const { _id, id, ...rest } = doc;
+    return { ...rest, _id, id: id ?? _id } as T & { id: string };
 }
 
-async function resolveExpiredPhase(match: JailbreakMatch): Promise<JailbreakMatch> {
+async function fetchMatchDoc(matchId: string): Promise<IJailbreakMatch | null> {
+    await connectToDatabase();
+    const match = await JailbreakMatchModel.findById(matchId).lean<IJailbreakMatch | null>();
+    if (!match) return null;
+    return withId(match);
+}
+
+async function resolveExpiredPhase(match: IJailbreakMatch): Promise<IJailbreakMatch> {
     if (match.currentPhase === "COMPLETED") {
         return match;
     }
 
     if (!match.phaseExpiresAt) {
-        const db = assertAdminDb();
-        await db.collection(MATCH_COLLECTION).doc(match.id).update({
-            phaseExpiresAt: buildTurnDeadline(),
-            updatedAt: FieldValue.serverTimestamp(),
-        });
+        await connectToDatabase();
+        await JailbreakMatchModel.updateOne(
+            { _id: match.id },
+            { $set: { phaseExpiresAt: buildTurnDeadline(), updatedAt: new Date() } }
+        );
         const refreshed = await fetchMatchDoc(match.id);
         return refreshed ?? match;
     }
 
     const now = Date.now();
-    if (match.phaseExpiresAt.toMillis() > now) return match;
+    if (match.phaseExpiresAt.getTime() > now) return match;
 
-    const db = assertAdminDb();
     let update: Record<string, unknown> = {
-        updatedAt: FieldValue.serverTimestamp(),
+        updatedAt: new Date(),
     };
 
     if (match.currentPhase === "ATTACK_PHASE") {
@@ -122,74 +107,59 @@ async function resolveExpiredPhase(match: JailbreakMatch): Promise<JailbreakMatc
             attemptCount,
             defenderScore: match.defenderScore + 50,
             currentPhase,
-            phaseExpiresAt: Timestamp.fromMillis(now + TURN_DURATION_MS),
+            phaseExpiresAt: new Date(now + TURN_DURATION_MS),
         };
     } else if (match.currentPhase === "DEFENDER_PATCH") {
         update = {
             ...update,
             currentPhase: "ATTACK_PHASE",
             attemptCount: 0,
-            phaseExpiresAt: Timestamp.fromMillis(now + TURN_DURATION_MS),
+            phaseExpiresAt: new Date(now + TURN_DURATION_MS),
         };
     }
 
-    await db.collection(MATCH_COLLECTION).doc(match.id).update(update);
+    await connectToDatabase();
+    await JailbreakMatchModel.updateOne({ _id: match.id }, { $set: update });
     const refreshed = await fetchMatchDoc(match.id);
     return refreshed ?? match;
 }
 
-async function getMatchById(matchId: string): Promise<JailbreakMatch | null> {
+async function getMatchById(matchId: string): Promise<IJailbreakMatch | null> {
     const base = await fetchMatchDoc(matchId);
     if (!base) return null;
     return resolveExpiredPhase(base);
 }
 
-async function getMatchForChild(childId: string): Promise<JailbreakMatch | null> {
-    const db = assertAdminDb();
-    const attackerSnap = await db
-        .collection(MATCH_COLLECTION)
-        .where("attackerChildId", "==", childId)
-        .orderBy("updatedAt", "desc")
-        .limit(1)
-        .get();
-    if (!attackerSnap.empty) {
-        const doc = attackerSnap.docs[0];
-        const rest = doc.data() as JailbreakMatch;
-        return resolveExpiredPhase({ ...rest, id: doc.id });
+async function getMatchForChild(childId: string): Promise<IJailbreakMatch | null> {
+    await connectToDatabase();
+    const attackerMatch = await JailbreakMatchModel.findOne({ attackerChildId: childId })
+        .sort({ updatedAt: -1 })
+        .lean<IJailbreakMatch | null>();
+    if (attackerMatch) {
+        return resolveExpiredPhase(withId(attackerMatch));
     }
 
-    const defenderSnap = await db
-        .collection(MATCH_COLLECTION)
-        .where("defenderChildId", "==", childId)
-        .orderBy("updatedAt", "desc")
-        .limit(1)
-        .get();
-    if (!defenderSnap.empty) {
-        const doc = defenderSnap.docs[0];
-        const rest = doc.data() as JailbreakMatch;
-        return resolveExpiredPhase({ ...rest, id: doc.id });
+    const defenderMatch = await JailbreakMatchModel.findOne({ defenderChildId: childId })
+        .sort({ updatedAt: -1 })
+        .lean<IJailbreakMatch | null>();
+    if (defenderMatch) {
+        return resolveExpiredPhase(withId(defenderMatch));
     }
     return null;
 }
 
-async function listTurns(matchId: string, limit = 20): Promise<JailbreakTurn[]> {
-    const db = assertAdminDb();
-    const snap = await db
-        .collection(MATCH_COLLECTION)
-        .doc(matchId)
-        .collection("turns")
-        .orderBy("createdAt", "desc")
+async function listTurns(matchId: string, limit = 20): Promise<IJailbreakTurn[]> {
+    await connectToDatabase();
+    const turns = await JailbreakTurnModel.find({ matchId })
+        .sort({ createdAt: -1 })
         .limit(limit)
-        .get();
-    return snap.docs.map((d) => {
-        const rest = d.data() as JailbreakTurn;
-        return { ...rest, id: d.id };
-    });
+        .lean<IJailbreakTurn[]>();
+    return turns.map((turn) => withId(turn));
 }
 
 async function sanitizeMatch(
-    match: JailbreakMatch,
-    turns: JailbreakTurn[],
+    match: IJailbreakMatch,
+    turns: IJailbreakTurn[],
     childId: string
 ): Promise<PublicMatchView> {
     const role = match.attackerChildId === childId ? "attacker" : "defender";
@@ -208,17 +178,17 @@ async function sanitizeMatch(
         status: match.status,
         developerPrompt: role === "defender" ? match.developerPrompt : undefined,
         breachCriteria: role === "defender" ? match.breachCriteria : undefined,
-        phaseExpiresAt: match.phaseExpiresAt?.toDate().toISOString(),
+        phaseExpiresAt: match.phaseExpiresAt?.toISOString(),
         themesCompleted,
         totalThemes,
         logs: turns.map((t) => ({
-            id: t.id,
+            id: t.id ?? t._id,
             attackerPrompt: t.attackerPrompt,
             aiResponse: t.aiResponse,
             breach: t.breach,
             refereeReason: role === "defender" ? t.refereeReason : undefined,
             tokensUsed: t.tokensUsed,
-            createdAt: t.createdAt.toDate().toISOString(),
+            createdAt: t.createdAt.toISOString(),
         })),
     };
 }
@@ -238,11 +208,11 @@ function computeAttackerReward(attempt: number, tokensUsed?: number) {
 }
 
 function buildMatchUpdateWithRoleSwap(params: {
-    match: JailbreakMatch;
+    match: IJailbreakMatch;
     shouldSwapRoles: boolean;
     cracksCompleted: number;
     currentPhase: MatchPhase;
-    status: JailbreakMatch["status"];
+    status: IJailbreakMatch["status"];
     attackerScore: number;
     defenderScore: number;
     attemptCount: number;
@@ -265,8 +235,8 @@ function buildMatchUpdateWithRoleSwap(params: {
         currentPhase,
         status,
         attemptCount,
-        phaseExpiresAt: currentPhase === "COMPLETED" ? FieldValue.delete() : buildTurnDeadline(),
-        updatedAt: FieldValue.serverTimestamp(),
+        phaseExpiresAt: currentPhase === "COMPLETED" ? null : buildTurnDeadline(),
+        updatedAt: new Date(),
         lastResponse,
     };
 
@@ -288,12 +258,23 @@ function buildMatchUpdateWithRoleSwap(params: {
     return updatePayload;
 }
 
+function buildUpdateWithUnset(updatePayload: Record<string, unknown>) {
+    const { phaseExpiresAt, ...rest } = updatePayload;
+    const update: Record<string, unknown> = { $set: rest };
+    if (phaseExpiresAt === null) {
+        update.$unset = { phaseExpiresAt: "" };
+    } else if (phaseExpiresAt !== undefined) {
+        (update.$set as Record<string, unknown>).phaseExpiresAt = phaseExpiresAt;
+    }
+    return update;
+}
+
 export async function recordAttackAttempt(params: {
     matchId?: string;
     childId: string;
     attackerPrompt: string;
 }): Promise<PublicMatchView> {
-    const db = assertAdminDb();
+    await connectToDatabase();
     const match = params.matchId
         ? await getMatchById(params.matchId)
         : await getMatchForChild(params.childId);
@@ -315,23 +296,24 @@ export async function recordAttackAttempt(params: {
         aiResponse: text,
     });
 
-    const turnPayload: Omit<JailbreakTurn, "id"> = {
+    const turnId = randomUUID();
+    const turnPayload: IJailbreakTurn = {
+        _id: turnId,
+        id: turnId,
         matchId: match.id,
         attackerPrompt: params.attackerPrompt,
         aiResponse: text,
         breach: verdict.breach,
         refereeReason: verdict.reason,
         tokensUsed,
-        createdAt: FieldValue.serverTimestamp() as unknown as JailbreakTurn["createdAt"],
+        createdAt: new Date(),
     };
-
-    const turnRef = db.collection(MATCH_COLLECTION).doc(match.id).collection("turns").doc();
-    await turnRef.set(turnPayload);
+    await JailbreakTurnModel.create(turnPayload);
 
     let cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
     let currentPhase: MatchPhase =
         verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
-    let status: JailbreakMatch["status"] = match.status ?? "active";
+    let status: IJailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
     const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
@@ -398,7 +380,10 @@ export async function recordAttackAttempt(params: {
     updatePayload.breachCriteria = breachCriteria;
     updatePayload.developerPrompt = developerPrompt;
 
-    await db.collection(MATCH_COLLECTION).doc(match.id).update(updatePayload);
+    await JailbreakMatchModel.updateOne(
+        { _id: match.id },
+        buildUpdateWithUnset(updatePayload)
+    );
 
     const updatedMatch = await getMatchById(match.id);
     const turns = await listTurns(match.id);
@@ -415,7 +400,7 @@ export async function* streamAttackAttempt(params: {
     void,
     undefined
 > {
-    const db = assertAdminDb();
+    await connectToDatabase();
     const match = params.matchId
         ? await getMatchById(params.matchId)
         : await getMatchForChild(params.childId);
@@ -453,23 +438,24 @@ export async function* streamAttackAttempt(params: {
         aiResponse: result.fullText,
     });
 
-    const turnPayload: Omit<JailbreakTurn, "id"> = {
+    const turnId = randomUUID();
+    const turnPayload: IJailbreakTurn = {
+        _id: turnId,
+        id: turnId,
         matchId: match.id,
         attackerPrompt: params.attackerPrompt,
         aiResponse: result.fullText,
         breach: verdict.breach,
         refereeReason: verdict.reason,
         tokensUsed: result.tokensUsed,
-        createdAt: FieldValue.serverTimestamp() as unknown as JailbreakTurn["createdAt"],
+        createdAt: new Date(),
     };
-
-    const turnRef = db.collection(MATCH_COLLECTION).doc(match.id).collection("turns").doc();
-    await turnRef.set(turnPayload);
+    await JailbreakTurnModel.create(turnPayload);
 
     let cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
     let currentPhase: MatchPhase =
         verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
-    let status: JailbreakMatch["status"] = match.status ?? "active";
+    let status: IJailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
     const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
@@ -536,7 +522,10 @@ export async function* streamAttackAttempt(params: {
     updatePayload.breachCriteria = breachCriteria;
     updatePayload.developerPrompt = developerPrompt;
 
-    await db.collection(MATCH_COLLECTION).doc(match.id).update(updatePayload);
+    await JailbreakMatchModel.updateOne(
+        { _id: match.id },
+        buildUpdateWithUnset(updatePayload)
+    );
 
     const updatedMatch = await getMatchById(match.id);
     const turns = await listTurns(match.id);
@@ -550,7 +539,7 @@ export async function applyDefenderPatch(params: {
     childId: string;
     developerPrompt: string;
 }): Promise<PublicMatchView> {
-    const db = assertAdminDb();
+    await connectToDatabase();
     const match = params.matchId
         ? await getMatchById(params.matchId)
         : await getMatchForChild(params.childId);
@@ -563,13 +552,18 @@ export async function applyDefenderPatch(params: {
         throw new Error("Match is already complete");
     }
 
-    await db.collection(MATCH_COLLECTION).doc(match.id).update({
-        developerPrompt: params.developerPrompt,
-        currentPhase: "ATTACK_PHASE",
-        attemptCount: 0,
-        phaseExpiresAt: buildTurnDeadline(),
-        updatedAt: FieldValue.serverTimestamp(),
-    });
+    await JailbreakMatchModel.updateOne(
+        { _id: match.id },
+        {
+            $set: {
+                developerPrompt: params.developerPrompt,
+                currentPhase: "ATTACK_PHASE",
+                attemptCount: 0,
+                phaseExpiresAt: buildTurnDeadline(),
+                updatedAt: new Date(),
+            },
+        }
+    );
 
     const updatedMatch = await getMatchById(match.id);
     const turns = await listTurns(match.id);
@@ -578,19 +572,24 @@ export async function applyDefenderPatch(params: {
 }
 
 export async function flipMatchRoles(matchId: string): Promise<void> {
-    const db = assertAdminDb();
+    await connectToDatabase();
     const match = await getMatchById(matchId);
     if (!match) throw new Error("Match not found");
 
-    await db.collection(MATCH_COLLECTION).doc(matchId).update({
-        attackerChildId: match.defenderChildId,
-        defenderChildId: match.attackerChildId,
-        attackerSeat: match.defenderSeat,
-        defenderSeat: match.attackerSeat,
-        attackerName: match.defenderName,
-        defenderName: match.attackerName,
-        attackerScore: match.defenderScore,
-        defenderScore: match.attackerScore,
-        updatedAt: FieldValue.serverTimestamp(),
-    });
+    await JailbreakMatchModel.updateOne(
+        { _id: matchId },
+        {
+            $set: {
+                attackerChildId: match.defenderChildId,
+                defenderChildId: match.attackerChildId,
+                attackerSeat: match.defenderSeat,
+                defenderSeat: match.attackerSeat,
+                attackerName: match.defenderName,
+                defenderName: match.attackerName,
+                attackerScore: match.defenderScore,
+                defenderScore: match.attackerScore,
+                updatedAt: new Date(),
+            },
+        }
+    );
 }

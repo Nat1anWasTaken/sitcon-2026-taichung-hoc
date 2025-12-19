@@ -27,7 +27,7 @@ function StatusBadge({ status }: { status?: ChildAccount["status"] }) {
 }
 
 const formatDate = (ts?: ChildAccount["lastLoginAt"]) =>
-    ts ? new Date(ts.toDate()).toLocaleDateString() : "Never";
+    ts ? new Date(ts).toLocaleDateString() : "Never";
 
 export default function DashboardPage() {
     const { children, loading } = useChildren();

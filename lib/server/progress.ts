@@ -1,9 +1,8 @@
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
-
-import { adminFirestore } from "../firebase-admin";
+import { connectToDatabase } from "../mongodb";
+import { ChildProgressModel, IChildProgress, ISectionProgress } from "../models/child-progress";
 import { SectionProgress } from "../game-types";
 
-const SECTION_DEFAULT: Omit<SectionProgress, "updatedAt"> = {
+const SECTION_DEFAULT: Omit<ISectionProgress, "updatedAt"> = {
     sectionId: "section-1",
     currentPhase: 1,
     currentLevel: 1,
@@ -19,32 +18,47 @@ const SECTION_DEFAULT: Omit<SectionProgress, "updatedAt"> = {
     cuesConsumed: {},
 };
 
-function assertAdminDb() {
-    if (!adminFirestore) throw new Error("Admin Firestore not initialized");
-    return adminFirestore;
+function getSection(
+    progress: IChildProgress | null,
+    sectionId: string
+): ISectionProgress | undefined {
+    if (!progress?.sections) return undefined;
+    if (progress.sections instanceof Map) {
+        return progress.sections.get(sectionId);
+    }
+    const sections = progress.sections as unknown as Record<string, ISectionProgress>;
+    return sections[sectionId];
 }
 
-export function progressRef(childId: string, sectionId: string) {
-    const db = assertAdminDb();
-    return db.collection("childProgress").doc(childId).collection("sections").doc(sectionId);
+function buildSection(sectionId: string, data?: Partial<ISectionProgress>): ISectionProgress {
+    return {
+        ...SECTION_DEFAULT,
+        ...data,
+        sectionId,
+        updatedAt: data?.updatedAt ?? new Date(),
+    };
 }
 
 export async function getSectionProgress(
     childId: string,
     sectionId: string
 ): Promise<SectionProgress> {
-    const ref = progressRef(childId, sectionId);
-    const snap = await ref.get();
-    if (!snap.exists) {
-        const seed = {
-            ...SECTION_DEFAULT,
-            sectionId,
-            updatedAt: Timestamp.now(),
-        };
-        await ref.set(seed);
-        return seed as SectionProgress;
+    await connectToDatabase();
+    const progress = await ChildProgressModel.findById(childId).lean<IChildProgress | null>();
+    const section = getSection(progress, sectionId);
+    if (!section) {
+        const seed = buildSection(sectionId);
+        await ChildProgressModel.updateOne(
+            { _id: childId },
+            {
+                $set: { [`sections.${sectionId}`]: seed },
+                $setOnInsert: { _id: childId },
+            },
+            { upsert: true }
+        );
+        return seed as unknown as SectionProgress;
     }
-    return snap.data() as SectionProgress;
+    return buildSection(sectionId, section) as unknown as SectionProgress;
 }
 
 export async function saveSectionProgress(
@@ -52,12 +66,21 @@ export async function saveSectionProgress(
     sectionId: string,
     data: Partial<SectionProgress>
 ) {
-    const ref = progressRef(childId, sectionId);
-    await ref.set(
+    await connectToDatabase();
+    const updates: Record<string, unknown> = {
+        [`sections.${sectionId}.sectionId`]: sectionId,
+        [`sections.${sectionId}.updatedAt`]: new Date(),
+    };
+    Object.entries(data as Partial<ISectionProgress>).forEach(([key, value]) => {
+        if (key === "updatedAt" || typeof value === "undefined") return;
+        updates[`sections.${sectionId}.${key}`] = value;
+    });
+    await ChildProgressModel.updateOne(
+        { _id: childId },
         {
-            ...data,
-            updatedAt: FieldValue.serverTimestamp(),
+            $set: updates,
+            $setOnInsert: { _id: childId },
         },
-        { merge: true }
+        { upsert: true }
     );
 }

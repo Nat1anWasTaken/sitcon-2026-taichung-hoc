@@ -1,9 +1,7 @@
-import { Timestamp } from "firebase/firestore";
-
 export type AdminProfile = {
     email: string;
     role: "admin";
-    createdAt: Timestamp;
+    createdAt: Date | string;
 };
 
 export type ChildAccount = {
@@ -12,8 +10,8 @@ export type ChildAccount = {
     passwordSalt: string;
     passwordHash: string; // SHA-256(salt:password)
     name?: string | null;
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
-    lastLoginAt?: Timestamp;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+    lastLoginAt?: Date | string;
     status?: "active" | "disabled";
 };

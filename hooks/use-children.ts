@@ -9,10 +9,11 @@ type ChildrenState = {
     loading: boolean;
     error?: string;
     children: ChildAccount[];
+    refresh: () => Promise<void>;
 };
 
 export function useChildren(): ChildrenState {
-    const { data, loading, error } = usePolling<ChildAccount[]>(
+    const { data, loading, error, refetch } = usePolling<ChildAccount[]>(
         "/api/admin/children",
         5000,
         {
@@ -26,6 +27,7 @@ export function useChildren(): ChildrenState {
         loading,
         error,
         children: data ?? [],
+        refresh: refetch,
     };
 }
 
