@@ -235,7 +235,7 @@ export function JailbreakBattle() {
                         <Badge variant="outline">第二單元</Badge>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <p className="font-semibold">你的教練尚未分配越獄對戰。</p>
+                        <p className="font-semibold">你的教練尚未分配文字攻防對戰。</p>
                         <p className="text-sm text-foreground/70">
                             請保持此分頁開啟 — 一旦建立對戰遊戲會自動重新整理。
                         </p>
@@ -284,7 +284,7 @@ export function JailbreakBattle() {
                         </Button>
                         {headerChip}
                         <Badge variant="secondary" className="text-sm font-bold uppercase">
-                            第二單元 · 越獄對戰
+                            第二單元 · 文字攻防對戰
                         </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
@@ -479,7 +479,7 @@ function AttackerPanel({
             <div className="space-y-2">
                 <Label>終端機</Label>
                 <Textarea
-                    placeholder="輸入你的越獄嘗試…"
+                    placeholder="輸入你的文字攻防嘗試…"
                     value={attackInput}
                     onChange={(e) => setAttackInput(e.target.value)}
                     disabled={!canAttack || busy || phase === "COMPLETED"}

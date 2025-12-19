@@ -67,7 +67,7 @@ export function GameHub() {
     }, [sectionComplete, startSection2]);
 
     const stageLabel = useMemo(() => {
-        if (stage === "section-2") return "第二單元 · 越獄對戰";
+        if (stage === "section-2") return "第二單元 · 文字攻防對戰";
         return "第一單元 · 花園創建者";
     }, [stage]);
 

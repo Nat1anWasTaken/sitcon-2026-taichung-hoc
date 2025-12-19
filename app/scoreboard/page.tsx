@@ -197,7 +197,7 @@ export default function ScoreboardPage() {
                 <Tabs defaultValue="garden" className="w-full">
                     <TabsList className="flex w-full flex-wrap gap-2 bg-secondary-background">
                         <TabsTrigger value="garden">第 1 部分 · 花園創建者</TabsTrigger>
-                        <TabsTrigger value="jailbreak">第 2 部分 · 越獄對戰</TabsTrigger>
+                        <TabsTrigger value="jailbreak">第 2 部分 · 文字攻防對戰</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="garden" className="space-y-4">
@@ -240,7 +240,7 @@ export default function ScoreboardPage() {
                             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
-                                        <Swords className="h-5 w-5" /> 越獄對戰
+                                        <Swords className="h-5 w-5" /> 文字攻防對戰
                                     </CardTitle>
                                     <CardDescription>
                                         即時的攻方 vs 守方對戰。得分會偏重於快速的入侵和穩定的修補。

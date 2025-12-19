@@ -216,7 +216,7 @@ export default function JailbreakAdminPage() {
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 font-semibold shadow-shadow">
                     <LayoutDashboard className="mr-2 inline h-4 w-4" />第 2 部分 · 管理員
                 </div>
-                <div className="text-lg font-bold">越獄主題庫與對戰</div>
+                <div className="text-lg font-bold">文字攻防主題庫與對戰</div>
             </div>
 
             <Card>
