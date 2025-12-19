@@ -304,7 +304,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     }
 
     return (
-        <div className="min-h-screen bg-background px-4 py-8">
+        <div className="w-full">
             <SectionCompleteOverlay open={isSectionComplete} />
             {!isSectionComplete && <LockedOverlay open={!!lockReason} message={lockReason ?? ""} />}
             <div className="mx-auto flex max-w-6xl flex-col gap-6">
