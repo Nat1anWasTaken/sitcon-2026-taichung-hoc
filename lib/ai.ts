@@ -212,7 +212,7 @@ export async function evaluateImageMatch(
                 content: [
                     {
                         type: "text",
-                        text: [target].join("\n"),
+                        text: target,
                     },
                     { type: "image_url", image_url: { url: dataUrl } },
                 ],
