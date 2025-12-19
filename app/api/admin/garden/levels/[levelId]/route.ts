@@ -12,7 +12,12 @@ export async function PATCH(
         return NextResponse.json({ error: "levelId required" }, { status: 400 });
     }
 
-    const body = await req.json();
+    let body: Record<string, unknown>;
+    try {
+        body = await req.json();
+    } catch {
+        return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
     const updates: Record<string, unknown> = {};
     if (typeof body.phaseId !== "undefined") updates.phaseId = body.phaseId;
     if (typeof body.levelNumber !== "undefined")

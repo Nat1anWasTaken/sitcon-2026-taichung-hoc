@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
         }
 
         await connectToDatabase();
+        // createdAt and updatedAt are automatically managed by Mongoose via timestamps: true
         await ChildModel.create({
             _id: childId,
             childId,

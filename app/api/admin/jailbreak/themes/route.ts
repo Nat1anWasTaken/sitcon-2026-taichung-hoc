@@ -23,11 +23,16 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const title = String(body.title ?? "").trim();
         const description = String(body.description ?? "").trim();
-        const difficulty = body.difficulty as "easy" | "medium" | "hard";
+        const difficulty = body.difficulty;
+        
+        if (difficulty !== "easy" && difficulty !== "medium" && difficulty !== "hard") {
+            return NextResponse.json({ error: "Invalid difficulty level" }, { status: 400 });
+        }
+        
         const adminPrompt = String(body.adminPrompt ?? "").trim();
         const breachCriteria = String(body.breachCriteria ?? "").trim();
 
-        if (!title || !description || !difficulty || !adminPrompt || !breachCriteria) {
+        if (!title || !description || !adminPrompt || !breachCriteria) {
             return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
         }
 

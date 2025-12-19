@@ -33,22 +33,24 @@ export async function createChildAccount({
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
 
-    const payload: Omit<ChildAccount, "lastLoginAt"> = {
+    const payload = {
         childId,
         seatNumber,
         passwordSalt: salt,
         passwordHash,
         name: name ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        status: "active",
+        status: "active" as const,
     };
 
     await apiRequest("/api/admin/children", {
         method: "POST",
         body: JSON.stringify(payload),
     });
-    return payload;
+    return {
+        ...payload,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    };
 }
 
 export async function updateChildName(childId: string, name: string) {

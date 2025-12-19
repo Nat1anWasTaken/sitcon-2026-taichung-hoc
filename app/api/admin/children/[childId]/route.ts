@@ -19,8 +19,16 @@ export async function PATCH(
         if (typeof body.status !== "undefined") updates.status = body.status;
         if (typeof body.passwordSalt !== "undefined") updates.passwordSalt = body.passwordSalt;
         if (typeof body.passwordHash !== "undefined") updates.passwordHash = body.passwordHash;
-        if (typeof body.seatNumber !== "undefined")
-            updates.seatNumber = Number(body.seatNumber);
+        if (typeof body.seatNumber !== "undefined") {
+            const seatNum = Number(body.seatNumber);
+            if (!Number.isInteger(seatNum) || seatNum < 1) {
+                return NextResponse.json(
+                    { error: "seatNumber must be a positive integer" },
+                    { status: 400 }
+                );
+            }
+            updates.seatNumber = seatNum;
+        }
         updates.updatedAt = new Date();
 
         if (Object.keys(updates).length === 1) {

@@ -26,8 +26,9 @@ export function useJailbreakThemes(): ThemeState {
                 (payload as { themes: JailbreakTheme[] }).themes ?? [],
             transform: (themes) =>
                 [...themes].sort((a, b) => {
-                    const tA = a.createdAt ? new Date(a.createdAt).getTime() : Date.now() + 100000;
-                    const tB = b.createdAt ? new Date(b.createdAt).getTime() : Date.now() + 100000;
+                    const fallback = Number.MAX_SAFE_INTEGER; // Items without timestamp appear first
+                    const tA = a.createdAt ? new Date(a.createdAt).getTime() : fallback;
+                    const tB = b.createdAt ? new Date(b.createdAt).getTime() : fallback;
                     return tB - tA;
                 }),
         }
@@ -48,8 +49,9 @@ export function useJailbreakMatches(): MatchState {
                 (payload as { matches: JailbreakMatch[] }).matches ?? [],
             transform: (matches) =>
                 [...matches].sort((a, b) => {
-                    const tA = a.updatedAt ? new Date(a.updatedAt).getTime() : Date.now() + 100000;
-                    const tB = b.updatedAt ? new Date(b.updatedAt).getTime() : Date.now() + 100000;
+                    const fallback = Number.MAX_SAFE_INTEGER;
+                    const tA = a.updatedAt ? new Date(a.updatedAt).getTime() : fallback;
+                    const tB = b.updatedAt ? new Date(b.updatedAt).getTime() : fallback;
                     return tB - tA;
                 }),
         }

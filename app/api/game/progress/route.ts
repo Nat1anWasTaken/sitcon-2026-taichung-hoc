@@ -10,8 +10,13 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "childId required" }, { status: 400 });
     }
 
-    await connectToDatabase();
-    const doc = await ChildProgressModel.findById(childId).lean<IChildProgress | null>();
+    try {
+      await connectToDatabase();
+      const doc = await ChildProgressModel.findById(childId).lean<IChildProgress | null>();
+    } catch (error) {
+        console.error("Database error fetching progress:", error);
+        return NextResponse.json({ error: "Failed to fetch progress" }, { status: 500 });
+    }
     const progress: Record<string, SectionProgress> = {};
 
     const sections = doc?.sections;
