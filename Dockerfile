@@ -16,14 +16,19 @@ RUN \
   fi
 
 
+# Development image
+FROM base AS dev
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NODE_ENV=development
+RUN if [ -f pnpm-lock.yaml ]; then corepack enable pnpm; fi
+CMD ["npm", "run", "dev"]
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-<<<<<<< HEAD
-COPY --from=deps /app/node_modules ./
-=======
 COPY --from=deps /app/node_modules ./node_modules
->>>>>>> a3dfc19 (chore: localize game content and improve image evaluation)
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
@@ -32,10 +37,11 @@ COPY . .
 # ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN \
-  if [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+  corepack enable && \
+  if [ -f pnpm-lock.yaml ]; then pnpm run build; \
   elif [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
-  else echo "Lockfile not found." && exit 1; \
+  else npm run build; \
   fi
 
 # Production image, copy all the files and run next

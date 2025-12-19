@@ -174,7 +174,7 @@ export default function JailbreakAdminPage() {
                     defenderChildId: matchForm.defender,
                     themeId: matchForm.themeId || themes[0]?.id,
                 });
-                setMatchMessage("已建立對戰。孩童可開啟 /game/jailbreak。");
+                setMatchMessage("已建立對戰。學生可開啟 /game/jailbreak。");
                 setMatchForm({ attacker: "", defender: "", themeId: "" });
                 await refreshMatches();
             } catch (err: unknown) {
@@ -223,7 +223,7 @@ export default function JailbreakAdminPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>建立關卡</CardTitle>
-                        <CardDescription>隱藏的管理提示對孩童不可見。</CardDescription>
+                        <CardDescription>隱藏的管理提示對學生不可見。</CardDescription>
                     </div>
                     <Badge variant="outline">黑盒</Badge>
                 </CardHeader>
@@ -243,7 +243,7 @@ export default function JailbreakAdminPage() {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor="description">描述（顯示給孩童）</Label>
+                                <Label htmlFor="description">描述（顯示給學生）</Label>
                                 <Textarea
                                     id="description"
                                     required

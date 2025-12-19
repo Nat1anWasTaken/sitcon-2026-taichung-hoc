@@ -286,7 +286,7 @@ export default function GardenAdminPage() {
                                 onChange={(e) =>
                                     setPhaseForm({ ...phaseForm, title: e.target.value })
                                 }
-                                placeholder="提示區塊"
+                                placeholder="Prompt 區塊"
                             />
                         </div>
                         <div className="space-y-2">
@@ -321,7 +321,7 @@ export default function GardenAdminPage() {
                             </p>
                         </div>
                         <div className="space-y-2">
-                            <Label>由提示鎖定（可選）</Label>
+                            <Label>由 Prompt 鎖定（可選）</Label>
                             <Input
                                 value={phaseForm.lockedByCue}
                                 onChange={(e) =>

@@ -47,7 +47,7 @@ const jailbreakMatchSchema = new Schema<IJailbreakMatch, JailbreakMatchModelType
         themeDescription: { type: String, required: true },
         adminPrompt: { type: String, required: true },
         breachCriteria: { type: String, required: true },
-        developerPrompt: { type: String, required: true },
+        developerPrompt: { type: String, default: "" },
         cracksCompleted: { type: Number, default: 0 },
         attackerScore: { type: Number, default: 0 },
         defenderScore: { type: Number, default: 0 },

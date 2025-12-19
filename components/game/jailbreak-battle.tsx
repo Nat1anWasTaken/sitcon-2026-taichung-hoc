@@ -410,7 +410,7 @@ function TurnTimerPill({
 }) {
     if (phase === "COMPLETED") return null;
 
-    const label = secondsLeft !== null ? `${formatSeconds(secondsLeft)} 待此回合` : "計時器同步中…";
+    const label = secondsLeft !== null ? formatSeconds(secondsLeft) : "計時器同步中…";
     const palette = turnExpired
         ? "border-destructive text-destructive"
         : "border-main text-foreground";
@@ -465,8 +465,8 @@ function AttackerPanel({
         <div className="space-y-4">
             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
                 {phase === "DEFENDER_PATCH"
-                    ? "守方正在修補牆壁。請等待下一回合。"
-                    : "發送巧妙提示以突破牆壁。"}
+                    ? "守方正在修補防禦。請等待下一回合。"
+                    : "發送巧妙提示以突破防禦。"}
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-foreground/70">
                 <Timer className="h-3 w-3" />
@@ -474,7 +474,7 @@ function AttackerPanel({
                     ? "關卡完成"
                     : turnExpired
                       ? "時間到 — 請稍候下一階段。"
-                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} 待此回合`}
+                      : formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)}
             </div>
             <div className="space-y-2">
                 <Label>終端機</Label>
@@ -532,7 +532,7 @@ function DefenderPanel({
     const helper =
         phase === "DEFENDER_PATCH"
             ? "重寫你的開發提示以阻止下一次攻擊。"
-            : "當攻方試探牆壁時鎖定。";
+            : "當攻方試探防禦時鎖定。";
     return (
         <div className="space-y-3">
             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
@@ -685,7 +685,7 @@ function LogList({
                             {typeof log.tokensUsed === "number" && (
                                 <span className="flex items-center gap-1">
                                     <Timer className="h-3 w-3" />
-                                    代幣： {log.tokensUsed}
+                                    Tokens： {log.tokensUsed}
                                 </span>
                             )}
                         </div>
