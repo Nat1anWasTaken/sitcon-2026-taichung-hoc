@@ -31,7 +31,7 @@ const agentKnowledgeDocSchema = new Schema<IAgentKnowledgeDoc, AgentKnowledgeDoc
         publishedAt: { type: Date, required: true },
         supersedesDocId: { type: String, default: null },
         content: { type: String, required: true },
-        facts: { type: Map, of: Schema.Types.Mixed, default: null },
+        facts: { type: Schema.Types.Mixed, default: null },
     },
     {
         _id: false, // Disable auto ObjectId
