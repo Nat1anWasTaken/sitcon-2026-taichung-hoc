@@ -307,6 +307,8 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
             return;
         }
 
+        if (!progress) return;
+
         if (
             phaseConfig.mode === "text" &&
             (progress.currentPhase === 2 || progress.currentPhase === 3) &&
