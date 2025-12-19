@@ -446,7 +446,7 @@ export default function JailbreakAdminPage() {
                                 onValueChange={(v) => setMatchForm((s) => ({ ...s, attacker: v }))}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="選擇兒童" />
+                                    <SelectValue placeholder="選擇學生" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {childOptions.map((c) => (
@@ -464,7 +464,7 @@ export default function JailbreakAdminPage() {
                                 onValueChange={(v) => setMatchForm((s) => ({ ...s, defender: v }))}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="選擇兒童" />
+                                    <SelectValue placeholder="選擇學生" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {childOptions.map((c) => (

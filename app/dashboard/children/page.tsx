@@ -120,10 +120,10 @@ export default function ChildrenPage() {
                     </Button>
                     <div>
                         <p className="text-xs uppercase tracking-tight text-foreground/70">管理</p>
-                        <h1 className="text-2xl font-bold leading-tight">兒童帳號</h1>
+                        <h1 className="text-2xl font-bold leading-tight">學生帳號</h1>
                     </div>
                 </div>
-                <Button onClick={() => setCreateOpen(true)}>新增兒童</Button>
+                <Button onClick={() => setCreateOpen(true)}>新增學生</Button>
             </div>
 
             {message && (
@@ -141,7 +141,7 @@ export default function ChildrenPage() {
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <CardTitle>目錄</CardTitle>
-                        <CardDescription>切換狀態、編輯名稱或重設兒童密碼。</CardDescription>
+                        <CardDescription>切換狀態、編輯名稱或重設學生密碼。</CardDescription>
                     </div>
                     <div className="flex items-center gap-3">
                         <Label htmlFor="status-filter" className="text-xs uppercase">
@@ -167,7 +167,7 @@ export default function ChildrenPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-16">座位</TableHead>
-                                <TableHead className="w-32">兒童 ID</TableHead>
+                                <TableHead className="w-32">學生 ID</TableHead>
                                 <TableHead>姓名</TableHead>
                                 <TableHead>狀態</TableHead>
                                 <TableHead>上次更新</TableHead>
@@ -178,7 +178,7 @@ export default function ChildrenPage() {
                             {filtered.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center text-sm">
-                                        {loading ? "載入兒童…" : "沒有符合篩選的兒童。"}
+                                        {loading ? "載入學生…" : "沒有符合篩選的學生。"}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -198,14 +198,14 @@ export default function ChildrenPage() {
             {createOpen && (
                 <div className="rounded-md border-4 border-foreground bg-secondary-background p-5 shadow-shadow">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-bold">建立兒童</h2>
+                        <h2 className="text-lg font-bold">建立學生</h2>
                         <Button variant="ghost" size="sm" onClick={() => setCreateOpen(false)}>
                             關閉
                         </Button>
                     </div>
                     <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
                         <div className="space-y-2">
-                            <Label htmlFor="childId">兒童 ID</Label>
+                            <Label htmlFor="childId">學生 ID</Label>
                             <Input
                                 id="childId"
                                 required
@@ -259,11 +259,11 @@ export default function ChildrenPage() {
                                         <Loader2 className="h-4 w-4 animate-spin" /> 建立中…
                                     </>
                                 ) : (
-                                    "建立兒童"
+                                    "建立學生"
                                 )}
                             </Button>
                             <p className="text-xs text-foreground/70">
-                                僅限管理員：兒童以座位徽章 + 密碼登入。
+                                僅限管理員：學生以座位徽章 + 密碼登入。
                             </p>
                         </div>
                     </form>

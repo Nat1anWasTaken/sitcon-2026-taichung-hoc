@@ -44,7 +44,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3">
                     <Button asChild>
                         <Link href="/dashboard/children" className="gap-2">
-                            管理兒童
+                            管理學生
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </Button>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard
-                    label="總兒童數"
+                    label="總學生數"
                     value={stats.total}
                     icon={<Users className="h-5 w-5" />}
                 />
@@ -67,7 +67,7 @@ export default function DashboardPage() {
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-xl">近期兒童會話</CardTitle>
+                    <CardTitle className="text-xl">近期學生會話</CardTitle>
                     <Badge variant="outline">{loading ? "載入中…" : `${children.length} 名`}</Badge>
                 </CardHeader>
                 <CardContent>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>座位</TableHead>
-                                <TableHead>兒童 ID</TableHead>
+                                <TableHead>學生 ID</TableHead>
                                 <TableHead>姓名</TableHead>
                                 <TableHead>狀態</TableHead>
                                 <TableHead>上次登入</TableHead>
@@ -85,7 +85,7 @@ export default function DashboardPage() {
                             {recent.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center text-sm">
-                                        {loading ? "載入兒童中…" : "尚無兒童帳號。"}
+                                        {loading ? "載入學生中…" : "尚無學生帳號。"}
                                     </TableCell>
                                 </TableRow>
                             )}

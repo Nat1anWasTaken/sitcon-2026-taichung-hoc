@@ -46,7 +46,7 @@ export default function Home() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Rabbit className="h-5 w-5" />
-                        兒童登入
+                        學生登入
                     </CardTitle>
                     <CardDescription>以座位徽章 ID 與密碼進入遊戲。</CardDescription>
                 </CardHeader>
