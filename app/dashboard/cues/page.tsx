@@ -25,16 +25,6 @@ const cueCatalog = [
         title: "Start Section 2 (Jailbreak)",
         description: "Allows kids to enter the Section 2 Jailbreak Battle.",
     },
-    {
-        id: "unlock-agent-tools",
-        title: "解鎖工具階段",
-        description: "讓第三部份 Agent 啟用工具關卡。",
-    },
-    {
-        id: "unlock-agent-defense",
-        title: "解鎖防守階段",
-        description: "讓第三部份 Agent 進入防守關。",
-    },
 ];
 
 export default function CuesPage() {

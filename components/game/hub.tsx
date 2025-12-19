@@ -7,9 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionOneGame } from "@/components/game/section-one";
 import { JailbreakBattle } from "@/components/game/jailbreak-battle";
-import { AgentWarRoom } from "@/components/game/agent-war-room";
 
-type Stage = "section-1" | "section-2" | "section-3";
+type Stage = "section-1" | "section-2";
 
 export function GameHub() {
     const [loading, setLoading] = useState(true);
@@ -17,7 +16,6 @@ export function GameHub() {
     const [sectionComplete, setSectionComplete] = useState(false);
     const [startSection2, setStartSection2] = useState(false);
     const [sectionTwoComplete, setSectionTwoComplete] = useState(false);
-    const [sectionThreeOpen, setSectionThreeOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -38,11 +36,6 @@ export function GameHub() {
                     const cueData = await cuesRes.json();
                     const activeCues: { id: string }[] = cueData.cues ?? [];
                     setStartSection2(activeCues.some((c) => c.id === "start-section-2"));
-                    setSectionThreeOpen(
-                        activeCues.some(
-                            (c) => c.id === "unlock-agent-tools" || c.id === "unlock-agent-defense"
-                        )
-                    );
                 }
                 if (matchRes.ok) {
                     const { match } = await matchRes.json();
@@ -67,17 +60,13 @@ export function GameHub() {
 
     useEffect(() => {
         if (sectionComplete && startSection2) {
-            if (sectionTwoComplete && sectionThreeOpen) {
-                setStage("section-3");
-                return;
-            }
             setStage("section-2");
+        } else {
+            setStage("section-1");
         }
-        if (!sectionComplete) setStage("section-1");
-    }, [sectionComplete, startSection2, sectionTwoComplete, sectionThreeOpen]);
+    }, [sectionComplete, startSection2]);
 
     const stageLabel = useMemo(() => {
-        if (stage === "section-3") return "Section 3 · Agent War Room";
         if (stage === "section-2") return "Section 2 · Jailbreak Battle";
         return "Section 1 · Garden Builders";
     }, [stage]);
@@ -105,12 +94,10 @@ export function GameHub() {
             <div className="flex flex-1">
                 {stage === "section-1" ? (
                     <SectionOneGame onSectionComplete={() => setSectionComplete(true)} />
-                ) : stage === "section-2" ? (
+                ) : (
                     <div className="flex-1">
                         <JailbreakBattle />
                     </div>
-                ) : (
-                    <AgentWarRoom />
                 )}
             </div>
         </div>

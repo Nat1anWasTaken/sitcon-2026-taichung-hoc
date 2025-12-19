@@ -3,13 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ScoreboardSection, ScoreboardSnapshot } from "@/lib/scoreboard-types";
-import { AgentScoreboardRow } from "@/lib/agent-types";
 import { JailbreakScoreboardRow } from "@/lib/jailbreak-scoreboard-types";
 
 export type CombinedScoreboards = {
     garden: ScoreboardSnapshot;
     jailbreak: { generatedAt: string; rows: JailbreakScoreboardRow[] };
-    agent: { generatedAt: string; rows: AgentScoreboardRow[] };
 };
 
 export type ScoreboardState = {

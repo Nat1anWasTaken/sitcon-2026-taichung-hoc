@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, RadioTower, RefreshCw, Shield, Swords, Users, Zap } from "lucide-react";
+import { Activity, RadioTower, RefreshCw, Swords, Users, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { allSections } from "@/lib/game/config";
 import { ScoreboardRow, ScoreboardSection } from "@/lib/scoreboard-types";
-import { AgentScoreboardRow } from "@/lib/agent-types";
 import { JailbreakScoreboardRow } from "@/lib/jailbreak-scoreboard-types";
 import { useScoreboard, sectionPhaseLabel } from "@/hooks/use-scoreboard";
 
@@ -158,12 +157,10 @@ export default function ScoreboardPage() {
         }));
 
     const jailbreakRows: JailbreakScoreboardRow[] = snapshot?.jailbreak.rows ?? [];
-    const agentRows: AgentScoreboardRow[] = snapshot?.agent.rows ?? [];
 
     const lastSync =
         snapshot?.garden?.generatedAt ??
-        snapshot?.jailbreak?.generatedAt ??
-        snapshot?.agent?.generatedAt;
+        snapshot?.jailbreak?.generatedAt;
 
     return (
         <div className="min-h-screen bg-background px-4 py-10">
@@ -204,7 +201,6 @@ export default function ScoreboardPage() {
                     <TabsList className="flex w-full flex-wrap gap-2 bg-secondary-background">
                         <TabsTrigger value="garden">Section 1 · Garden Builders</TabsTrigger>
                         <TabsTrigger value="jailbreak">Section 2 · Jailbreak Battle</TabsTrigger>
-                        <TabsTrigger value="agent">Section 3 · Agent War Room</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="garden" className="space-y-4">
@@ -332,74 +328,6 @@ export default function ScoreboardPage() {
                                                     </TableCell>
                                                     <TableCell className="text-sm">
                                                         {formatUpdated(row.updatedAt)}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="agent" className="space-y-4">
-                        <Card>
-                            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Shield className="h-5 w-5" /> Agent War Room
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Lower tokens, higher score. Only successful runs appear
-                                        here.
-                                    </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground/70">
-                                    <RadioTower className="h-4 w-4" />
-                                    Refreshing every few seconds
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="overflow-x-auto rounded-md border-4 border-foreground bg-secondary-background shadow-shadow">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>#</TableHead>
-                                                <TableHead>Seat</TableHead>
-                                                <TableHead>Name</TableHead>
-                                                <TableHead>Level</TableHead>
-                                                <TableHead>Stage</TableHead>
-                                                <TableHead>Tokens</TableHead>
-                                                <TableHead>Score</TableHead>
-                                                <TableHead>Best?</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {agentRows.length === 0 && (
-                                                <TableRow>
-                                                    <TableCell
-                                                        colSpan={8}
-                                                        className="text-center text-sm"
-                                                    >
-                                                        No runs yet.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                            {agentRows.map((row, idx) => (
-                                                <TableRow
-                                                    key={`${row.childId}-${row.levelId}-${idx}`}
-                                                >
-                                                    <TableCell>{idx + 1}</TableCell>
-                                                    <TableCell>{row.seatNumber ?? "—"}</TableCell>
-                                                    <TableCell>{row.name ?? "—"}</TableCell>
-                                                    <TableCell>{row.levelId}</TableCell>
-                                                    <TableCell>{row.stageType}</TableCell>
-                                                    <TableCell>{row.totalTokens ?? "?"}</TableCell>
-                                                    <TableCell className="font-semibold">
-                                                        {row.score}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {row.bestForLevel ? "✅" : ""}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

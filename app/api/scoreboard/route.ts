@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { buildAgentScoreboard } from "@/lib/server/agent-scoreboard";
 import { buildJailbreakScoreboard } from "@/lib/server/jailbreak-scoreboard";
 import { buildScoreboardSnapshot } from "@/lib/server/scoreboard";
 
@@ -9,16 +8,14 @@ export const runtime = "nodejs";
 type CombinedScoreboard = {
     garden: Awaited<ReturnType<typeof buildScoreboardSnapshot>>;
     jailbreak: Awaited<ReturnType<typeof buildJailbreakScoreboard>>;
-    agent: Awaited<ReturnType<typeof buildAgentScoreboard>>;
 };
 
 async function buildCombined(): Promise<CombinedScoreboard> {
-    const [garden, jailbreak, agent] = await Promise.all([
+    const [garden, jailbreak] = await Promise.all([
         buildScoreboardSnapshot(),
         buildJailbreakScoreboard(),
-        buildAgentScoreboard(),
     ]);
-    return { garden, jailbreak, agent };
+    return { garden, jailbreak };
 }
 
 export async function GET(req: NextRequest) {

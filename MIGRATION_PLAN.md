@@ -46,11 +46,6 @@ MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/<database>?retryWr
 | `jailbreakThemes` | `lib/models/jailbreak-theme.ts` | `JailbreakThemeModel` |
 | `jailbreakMatches` | `lib/models/jailbreak-match.ts` | `JailbreakMatchModel` |
 | `jailbreakMatches/{matchId}/turns` | Embedded in match OR `lib/models/jailbreak-turn.ts` | `JailbreakTurnModel` |
-| `agentStages` | `lib/models/agent-stage.ts` | `AgentStageModel` |
-| `agentLevels` | `lib/models/agent-level.ts` | `AgentLevelModel` |
-| `agentKnowledgeDocs` | `lib/models/agent-knowledge-doc.ts` | `AgentKnowledgeDocModel` |
-| `agentRuns` | `lib/models/agent-run.ts` | `AgentRunModel` |
-| `childAgentProgress` | `lib/models/child-agent-progress.ts` | `ChildAgentProgressModel` |
 
 ### 2.2 Schema Design Considerations
 
@@ -61,7 +56,6 @@ MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/<database>?retryWr
 **Index strategy:**
 - `children`: Index on `seatNumber` (unique)
 - `jailbreakMatches`: Compound index on `attackerChildId + updatedAt`, `defenderChildId + updatedAt`
-- `agentRuns`: Index on `childId`, `levelId`, `passed`
 - `gameCues`: Index on `active`, `updatedAt`
 
 ---
@@ -113,12 +107,9 @@ Replace each `onSnapshot` real-time listener with a polling endpoint.
 | File | Changes |
 |------|---------|
 | `lib/server/progress.ts` | Replace Firestore queries with Mongoose |
-| `lib/server/agent-store.ts` | Replace Firestore queries with Mongoose |
-| `lib/server/agent-progress.ts` | Replace Firestore queries with Mongoose |
 | `lib/server/cues.ts` | Replace Firestore queries with Mongoose |
 | `lib/server/scoreboard.ts` | Replace Firestore aggregation with Mongoose |
 | `lib/server/jailbreak-scoreboard.ts` | Replace Firestore queries with Mongoose |
-| `lib/server/agent-scoreboard.ts` | Replace Firestore queries with Mongoose |
 | `lib/server/jailbreak.ts` | Replace Firestore queries with Mongoose |
 
 ### 4.2 Query Translation Examples
@@ -126,14 +117,12 @@ Replace each `onSnapshot` real-time listener with a polling endpoint.
 **Firestore → MongoDB:**
 ```typescript
 // Before (Firestore)
-db.collection("agentLevels")
   .where("stageType", "==", stageType)
   .where("isActive", "==", true)
   .orderBy("order", "asc")
   .get()
 
 // After (Mongoose)
-await AgentLevelModel.find({ stageType, isActive: true }).sort({ order: 1 })
 ```
 
 ```typescript
@@ -244,11 +233,6 @@ const admin = await AdminModel.findOne({ firebaseUid: uid })
 6. `jailbreakThemes`
 7. `jailbreakMatches` + embedded/referenced turns
 8. `childProgress` (flatten nested structure)
-9. `agentStages`
-10. `agentLevels`
-11. `agentKnowledgeDocs`
-12. `agentRuns`
-13. `childAgentProgress`
 
 ---
 
@@ -587,7 +571,6 @@ ItemModel.find({ price: { $gt: 100 } }).sort({ createdAt: -1 })
 
 #### Files with Complex Queries
 - `lib/server/jailbreak.ts` - Multiple where clauses with orderBy
-- `lib/server/agent-store.ts` - Compound filters
 - `lib/server/scoreboard.ts` - Aggregation queries
 
 #### Action Items
@@ -641,7 +624,6 @@ MongoDB Atlas clusters (M10+) support transactions. Free tier (M0) does NOT supp
 #### Files Using Batches
 - `lib/jailbreak-admin.ts` - `writeBatch()` for reset operations
 - `lib/garden-admin.ts` - `writeBatch()` for cascade deletes
-- `lib/server/agent-store.ts` - Batch update for `bestForLevel` flags
 
 #### Action Items
 - [ ] Ensure MongoDB Atlas tier supports transactions (M10+ or M0 with single-doc operations)
@@ -1293,13 +1275,7 @@ JailbreakMatchModel.collection.createIndex({ status: 1, updatedAt: -1 })
 // Jailbreak Turns
 JailbreakTurnModel.collection.createIndex({ matchId: 1, createdAt: -1 })
 
-// Agent Levels
-AgentLevelModel.collection.createIndex({ stageType: 1, isActive: 1, order: 1 })
 
-// Agent Runs
-AgentRunModel.collection.createIndex({ childId: 1 })
-AgentRunModel.collection.createIndex({ levelId: 1, passed: 1 })
-AgentRunModel.collection.createIndex({ levelId: 1, bestForLevel: 1 })
 
 // Game Cues
 GameCueModel.collection.createIndex({ active: 1, updatedAt: -1 })
