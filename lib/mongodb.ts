@@ -7,10 +7,10 @@ if (!MONGODB_URI) {
 }
 
 // Cache connection in global to survive hot reloads in Next.js
-let cached = global.mongoose;
+let cached = global._mongooseGlobal;
 
 if (!cached) {
-    cached = global.mongoose = { conn: null, promise: null };
+    cached = global._mongooseGlobal = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
@@ -43,8 +43,8 @@ export async function connectToDatabase() {
 
 // Type declaration for global
 declare global {
-    var mongoose: {
-        conn: typeof mongoose | null;
-        promise: Promise<typeof mongoose> | null;
+    var _mongooseGlobal: {
+        conn: typeof import("mongoose") | null;
+        promise: Promise<typeof import("mongoose")> | null;
     };
 }
