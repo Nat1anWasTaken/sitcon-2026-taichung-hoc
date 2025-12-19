@@ -7,6 +7,7 @@ import {
     DndContext,
     DragEndEvent,
     DragStartEvent,
+    DragOverEvent,
     useDraggable,
     useDroppable,
     closestCenter,
@@ -16,7 +17,7 @@ import {
     SortableContext,
     useSortable,
     arrayMove,
-    verticalListSortingStrategy,
+    rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -499,14 +500,56 @@ function BlockBuilder({
     );
 
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [ghostIndex, setGhostIndex] = useState<number | null>(null);
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveDragId(event.active.id.toString());
     };
 
+    const handleDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+        if (!over) {
+            setGhostIndex(null);
+            return;
+        }
+
+        const activeId = active.id.toString();
+        // Only show ghost when dragging a NEW source block
+        if (!activeId.startsWith("source-")) {
+            setGhostIndex(null);
+            return;
+        }
+
+        const overId = over.id.toString();
+
+        if (overId === "prompt-bar") {
+            // Append if over the container background
+            setGhostIndex(selected.length);
+            return;
+        }
+
+        if (overId === "ghost-placeholder") {
+            // Keep current index if over the ghost itself
+            return;
+        }
+
+        // If over an existing item, find its index
+        const index = selectedWithIds.findIndex((item) => item.id === overId);
+        if (index !== -1) {
+            setGhostIndex(index);
+        } else if (overId === "removal-zone") {
+            setGhostIndex(null);
+        }
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveDragId(null);
+        
+        // Capture ghost index before resetting
+        const finalGhostIndex = ghostIndex;
+        setGhostIndex(null);
+
         if (!over) return;
 
         const activeId = active.id.toString();
@@ -515,7 +558,6 @@ function BlockBuilder({
         const activeIsSource = activeId.startsWith("source-");
         const activeIsSelected = activeId.startsWith("selected-");
         const overIsRemoval = overId === "removal-zone";
-        const overIsPrompt = overId === "prompt-bar";
         const overSortable = over.data?.current?.sortable;
         const overIsSelected = overId.startsWith("selected-") || Boolean(overSortable);
 
@@ -526,13 +568,19 @@ function BlockBuilder({
             return;
         }
 
-        // 2) Add a source block anywhere on the prompt bar (empty space OR on a chip)
+        // 2) Add a source block
         if (activeIsSource) {
             if (!activeBlockLabel) return;
-            const insertAt =
-                overIsPrompt || !overIsSelected
-                    ? selected.length
-                    : (overSortable?.index ?? selectedWithIds.findIndex((i) => i.id === overId));
+            if (overIsRemoval) return; // Do nothing if dropped on trash
+
+            let insertAt = selected.length;
+            if (finalGhostIndex !== null) {
+                insertAt = finalGhostIndex;
+            } else if (overIsSelected) {
+                // Fallback (unlikely if dragOver worked)
+                insertAt = overSortable?.index ?? selectedWithIds.findIndex((i) => i.id === overId);
+                if (insertAt === -1) insertAt = selected.length;
+            }
 
             const next = [...selected];
             next.splice(insertAt, 0, activeBlockLabel);
@@ -552,7 +600,10 @@ function BlockBuilder({
         }
     };
 
-    const handleDragCancel = () => setActiveDragId(null);
+    const handleDragCancel = () => {
+        setActiveDragId(null);
+        setGhostIndex(null);
+    };
 
     const activeBlock = useMemo(() => {
         if (!activeDragId) return null;
@@ -562,6 +613,28 @@ function BlockBuilder({
             : selectedWithIds.find((item) => item.id === activeDragId)?.block;
         return dragData ?? null;
     }, [activeDragId, selectedWithIds, sourceBlocks]);
+
+    // Construct the list of items to display in the prompt bar (including ghost)
+    const itemsWithGhost = useMemo(() => {
+        // Only inject ghost if dragging source and we have a position
+        if (ghostIndex === null || !activeDragId?.startsWith("source-")) {
+            return selectedWithIds;
+        }
+
+        const draggingBlock = sourceBlocks.find((b) => b.id === activeDragId)?.block;
+        if (!draggingBlock) return selectedWithIds;
+
+        const newItems = [...selectedWithIds];
+        const safeIndex = Math.max(0, Math.min(ghostIndex, newItems.length));
+        
+        // Insert a ghost item
+        newItems.splice(safeIndex, 0, {
+            id: "ghost-placeholder",
+            block: draggingBlock,
+        });
+        
+        return newItems;
+    }, [selectedWithIds, ghostIndex, activeDragId, sourceBlocks]);
 
     const removeAt = (idx: number) => {
         const copy = [...selected];
@@ -573,6 +646,7 @@ function BlockBuilder({
         <DndContext
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
         >
@@ -589,9 +663,9 @@ function BlockBuilder({
                     ))}
                 </div>
                 <PromptBar
-                    selectedWithIds={selectedWithIds}
+                    items={itemsWithGhost}
                     onRemove={removeAt}
-                    isEmpty={selected.length === 0}
+                    isEmpty={selected.length === 0 && !ghostIndex}
                 />
                 <RemovalZone />
             </div>
@@ -638,11 +712,11 @@ function DraggableBlock({
 }
 
 function PromptBar({
-    selectedWithIds,
+    items,
     onRemove,
     isEmpty,
 }: {
-    selectedWithIds: { id: string; block: string }[];
+    items: { id: string; block: string }[];
     onRemove: (idx: number) => void;
     isEmpty: boolean;
 }) {
@@ -660,18 +734,23 @@ function PromptBar({
                 </p>
             )}
             <SortableContext
-                items={selectedWithIds.map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
+                items={items.map((item) => item.id)}
+                strategy={rectSortingStrategy}
             >
                 <div className="mt-2 flex flex-wrap gap-2">
-                    {selectedWithIds.map((item, idx) => (
-                        <SortableBlock
-                            key={item.id}
-                            id={item.id}
-                            block={item.block}
-                            onRemove={() => onRemove(idx)}
-                        />
-                    ))}
+                    {items.map((item, idx) => {
+                        // Check if it's the ghost placeholder
+                        const isGhost = item.id === "ghost-placeholder";
+                        return (
+                            <SortableBlock
+                                key={item.id}
+                                id={item.id}
+                                block={item.block}
+                                onRemove={() => onRemove(idx)}
+                                isGhost={isGhost}
+                            />
+                        );
+                    })}
                 </div>
             </SortableContext>
         </div>
@@ -682,14 +761,17 @@ function SortableBlock({
     id,
     block,
     onRemove,
+    isGhost,
 }: {
     id: string;
     block: string;
     onRemove: () => void;
+    isGhost?: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id,
         data: { block },
+        disabled: isGhost, // Disable sorting interactions for the ghost itself
     });
 
     const style = {
@@ -698,18 +780,24 @@ function SortableBlock({
         transition: isDragging
             ? "none"
             : (transition ?? "transform 150ms ease-out, box-shadow 150ms ease-out"),
-        opacity: isDragging ? 0 : 1, // hide original while overlay follows pointer
-        cursor: isDragging ? "grabbing" : "grab",
+        // We show the ghost visually via classes, so we don't need to hide it entirely
+        // unless it's the actual ghost-placeholder which has its own opacity
+        opacity: isGhost ? 0.5 : 1,
+        cursor: isDragging ? "grabbing" : isGhost ? "default" : "grab",
     };
 
     return (
         <button
             ref={setNodeRef}
             style={style}
-            onClick={onRemove}
+            onClick={isGhost ? undefined : onRemove}
             {...listeners}
             {...attributes}
-            className="rounded-md border-4 border-foreground bg-main px-2 py-1 text-xs font-semibold shadow-shadow hover:-translate-y-0.5 hover:rotate-1 hover:shadow-lg touch-none"
+            className={`rounded-md border-4 border-foreground px-3 py-2 text-sm font-semibold touch-none transition-all duration-150 ${
+                isGhost || isDragging
+                    ? "border-dashed bg-transparent shadow-none opacity-50"
+                    : "bg-main shadow-shadow hover:-translate-y-0.5 hover:rotate-1 hover:shadow-lg"
+            }`}
         >
             {block}
         </button>
