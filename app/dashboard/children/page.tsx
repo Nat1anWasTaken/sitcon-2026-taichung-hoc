@@ -1,6 +1,5 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import {
     ArrowLeft,
     Flag,
@@ -11,6 +10,7 @@ import {
     SlidersHorizontal,
 } from "lucide-react";
 import Link from "next/link";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,19 +24,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import {
     Table,
@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/table";
 import { useChildProgress } from "@/hooks/use-child-progress";
 import { useChildren } from "@/hooks/use-children";
+import { useGardenContent } from "@/hooks/use-garden";
 import {
     createChildAccount,
     resetChildPassword,
@@ -55,13 +56,11 @@ import {
     updateChildName,
 } from "@/lib/child-accounts";
 import { getDefaultSectionProgress, saveChildSectionProgress } from "@/lib/child-progress";
-import { SECTION_ONE_ID, buildSectionConfigFromRecords } from "@/lib/game/config";
 import { SectionProgress } from "@/lib/game-types";
+import { SECTION_ONE_ID, buildSectionConfigFromRecords } from "@/lib/game/config";
 import { ChildAccount } from "@/lib/types";
-import { useGardenContent } from "@/hooks/use-garden";
 
-const formatDate = (ts?: ChildAccount["updatedAt"]) =>
-    ts ? new Date(ts).toLocaleString() : "—";
+const formatDate = (ts?: ChildAccount["updatedAt"]) => (ts ? new Date(ts).toLocaleString() : "—");
 
 export default function ChildrenPage() {
     const { children, loading, error, refresh } = useChildren();
@@ -116,17 +115,15 @@ export default function ChildrenPage() {
                     <Button asChild variant="ghost" size="sm" className="-ml-2">
                         <Link href="/dashboard" className="gap-2">
                             <ArrowLeft className="h-4 w-4" />
-                            Back
+                            返回
                         </Link>
                     </Button>
                     <div>
-                        <p className="text-xs uppercase tracking-tight text-foreground/70">
-                            Management
-                        </p>
-                        <h1 className="text-2xl font-bold leading-tight">Child accounts</h1>
+                        <p className="text-xs uppercase tracking-tight text-foreground/70">管理</p>
+                        <h1 className="text-2xl font-bold leading-tight">兒童帳號</h1>
                     </div>
                 </div>
-                <Button onClick={() => setCreateOpen(true)}>New child</Button>
+                <Button onClick={() => setCreateOpen(true)}>新增兒童</Button>
             </div>
 
             {message && (
@@ -143,14 +140,12 @@ export default function ChildrenPage() {
             <Card>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle>Directory</CardTitle>
-                        <CardDescription>
-                            Toggle status, edit names, or reset passwords for children.
-                        </CardDescription>
+                        <CardTitle>目錄</CardTitle>
+                        <CardDescription>切換狀態、編輯名稱或重設兒童密碼。</CardDescription>
                     </div>
                     <div className="flex items-center gap-3">
                         <Label htmlFor="status-filter" className="text-xs uppercase">
-                            Status
+                            狀態
                         </Label>
                         <Select
                             value={filterStatus}
@@ -160,9 +155,9 @@ export default function ChildrenPage() {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="disabled">Disabled</SelectItem>
+                                <SelectItem value="all">全部</SelectItem>
+                                <SelectItem value="active">啟用</SelectItem>
+                                <SelectItem value="disabled">停用</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -171,21 +166,19 @@ export default function ChildrenPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-16">Seat</TableHead>
-                                <TableHead className="w-32">Child ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Last updated</TableHead>
-                                <TableHead className="w-16">Actions</TableHead>
+                                <TableHead className="w-16">座位</TableHead>
+                                <TableHead className="w-32">兒童 ID</TableHead>
+                                <TableHead>姓名</TableHead>
+                                <TableHead>狀態</TableHead>
+                                <TableHead>上次更新</TableHead>
+                                <TableHead className="w-16">操作</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filtered.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center text-sm">
-                                        {loading
-                                            ? "Loading children…"
-                                            : "No children match this filter."}
+                                        {loading ? "載入兒童…" : "沒有符合篩選的兒童。"}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -205,14 +198,14 @@ export default function ChildrenPage() {
             {createOpen && (
                 <div className="rounded-md border-4 border-foreground bg-secondary-background p-5 shadow-shadow">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-bold">Create child</h2>
+                        <h2 className="text-lg font-bold">建立兒童</h2>
                         <Button variant="ghost" size="sm" onClick={() => setCreateOpen(false)}>
-                            Close
+                            關閉
                         </Button>
                     </div>
                     <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
                         <div className="space-y-2">
-                            <Label htmlFor="childId">Child ID</Label>
+                            <Label htmlFor="childId">兒童 ID</Label>
                             <Input
                                 id="childId"
                                 required
@@ -224,7 +217,7 @@ export default function ChildrenPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="seatNumber">Seat number</Label>
+                            <Label htmlFor="seatNumber">座位號碼</Label>
                             <Input
                                 id="seatNumber"
                                 required
@@ -237,10 +230,10 @@ export default function ChildrenPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="name">Name</Label>
+                            <Label htmlFor="name">姓名</Label>
                             <Input
                                 id="name"
-                                placeholder="Optional name"
+                                placeholder="選填名稱"
                                 value={formState.name}
                                 onChange={(e) =>
                                     setFormState((s) => ({ ...s, name: e.target.value }))
@@ -248,7 +241,7 @@ export default function ChildrenPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">密碼</Label>
                             <Input
                                 id="password"
                                 required
@@ -263,14 +256,14 @@ export default function ChildrenPage() {
                             <Button type="submit" disabled={busy}>
                                 {busy ? (
                                     <>
-                                        <Loader2 className="h-4 w-4 animate-spin" /> Creating…
+                                        <Loader2 className="h-4 w-4 animate-spin" /> 建立中…
                                     </>
                                 ) : (
-                                    "Create child"
+                                    "建立兒童"
                                 )}
                             </Button>
                             <p className="text-xs text-foreground/70">
-                                Admin-only: children authenticate with seat badge + password.
+                                僅限管理員：兒童以座位徽章 + 密碼登入。
                             </p>
                         </div>
                     </form>
@@ -333,7 +326,7 @@ function ChildRow({
                 <TableCell>{child.name ?? "—"}</TableCell>
                 <TableCell>
                     <Badge variant={disabled ? "destructive" : "default"} className="capitalize">
-                        {disabled ? "Disabled" : "Active"}
+                        {disabled ? "已停用" : "啟用"}
                     </Badge>
                 </TableCell>
                 <TableCell className="text-xs">{formatDate(child.updatedAt)}</TableCell>
@@ -347,18 +340,18 @@ function ChildRow({
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => setOpenEdit(true)}>
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Edit name
+                                編輯名稱
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setOpenReset(true)}>
                                 <KeyRound className="mr-2 h-4 w-4" />
-                                Reset password
+                                重設密碼
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={onProgress}>
                                 <SlidersHorizontal className="mr-2 h-4 w-4" />
-                                Progress
+                                進度
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={toggleStatus}>
-                                {disabled ? "Enable account" : "Disable account"}
+                                {disabled ? "啟用帳號" : "停用帳號"}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -366,9 +359,9 @@ function ChildRow({
             </TableRow>
 
             {openEdit && (
-                <InlineDialog title="Edit name" onClose={() => setOpenEdit(false)}>
+                <InlineDialog title="編輯名稱" onClose={() => setOpenEdit(false)}>
                     <div className="space-y-3">
-                        <Label htmlFor={`name-${child.childId}`}>Name</Label>
+                        <Label htmlFor={`name-${child.childId}`}>姓名</Label>
                         <Input
                             id={`name-${child.childId}`}
                             value={name}
@@ -376,10 +369,10 @@ function ChildRow({
                         />
                         <div className="flex items-center gap-2">
                             <Button onClick={applyName} disabled={saving}>
-                                {saving ? "Saving…" : "Save"}
+                                {saving ? "儲存中…" : "儲存"}
                             </Button>
                             <Button variant="ghost" onClick={() => setOpenEdit(false)}>
-                                Cancel
+                                取消
                             </Button>
                         </div>
                     </div>
@@ -387,9 +380,9 @@ function ChildRow({
             )}
 
             {openReset && (
-                <InlineDialog title="Reset password" onClose={() => setOpenReset(false)}>
+                <InlineDialog title="重設密碼" onClose={() => setOpenReset(false)}>
                     <div className="space-y-3">
-                        <Label htmlFor={`pw-${child.childId}`}>New password</Label>
+                        <Label htmlFor={`pw-${child.childId}`}>新密碼</Label>
                         <Input
                             id={`pw-${child.childId}`}
                             type="password"
@@ -398,10 +391,10 @@ function ChildRow({
                         />
                         <div className="flex items-center gap-2">
                             <Button onClick={applyReset} disabled={saving || password.length === 0}>
-                                {saving ? "Updating…" : "Update password"}
+                                {saving ? "更新中…" : "更新密碼"}
                             </Button>
                             <Button variant="ghost" onClick={() => setOpenReset(false)}>
-                                Cancel
+                                取消
                             </Button>
                         </div>
                     </div>
@@ -426,7 +419,7 @@ function InlineDialog({
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold">{title}</h3>
                     <Button variant="ghost" size="sm" onClick={onClose}>
-                        Close
+                        關閉
                     </Button>
                 </div>
                 <div className="mt-4">{children}</div>
@@ -448,7 +441,7 @@ function ProgressSheet({
 
     const sections = useMemo(() => {
         if (phases.length === 0) return [];
-        return [buildSectionConfigFromRecords(SECTION_ONE_ID, "Garden Builders", phases, levels)];
+        return [buildSectionConfigFromRecords(SECTION_ONE_ID, "花園創建者", phases, levels)];
     }, [phases, levels]);
 
     const sectionIds = useMemo(() => sections.map((s) => s.id), [sections]);

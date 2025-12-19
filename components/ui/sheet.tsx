@@ -69,7 +69,7 @@ function SheetContent({
                 {children}
                 <SheetPrimitive.Close className="absolute right-4 top-4 rounded-base ring-offset-white focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
                     <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
+                    <span className="sr-only">關閉</span>
                 </SheetPrimitive.Close>
             </SheetPrimitive.Content>
         </SheetPortal>
@@ -121,13 +121,13 @@ function SheetDescription({
 
 export {
     Sheet,
-    SheetPortal,
-    SheetOverlay,
-    SheetTrigger,
     SheetClose,
     SheetContent,
-    SheetHeader,
-    SheetFooter,
-    SheetTitle,
     SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetOverlay,
+    SheetPortal,
+    SheetTitle,
+    SheetTrigger,
 };

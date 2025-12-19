@@ -1,7 +1,7 @@
 "use client";
 
+import { LayoutDashboard, Loader2, Pencil, Plus, RotateCcw, Sprout, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
-import { LayoutDashboard, Loader2, Pencil, Plus, Sprout, RotateCcw, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,14 +122,12 @@ export default function GardenAdminPage() {
                         p.order === phaseForm.order && (!editingPhase || p.id !== editingPhase.id)
                 );
                 if (orderClash) {
-                    setMessage("Each phase needs a unique order number. Pick a different order.");
+                    setMessage("每個階段需要唯一的順序編號。請選擇不同的順序。");
                     return;
                 }
 
                 if (!editingPhase && phases.length >= MAX_PHASES) {
-                    setMessage(
-                        "Only three phases are supported in Section 1. Edit an existing phase instead."
-                    );
+                    setMessage("第 1 部分僅支援三個階段。請編輯現有階段。");
                     return;
                 }
 
@@ -138,13 +136,13 @@ export default function GardenAdminPage() {
                         ...phaseForm,
                         lockedByCue: phaseForm.lockedByCue.trim(),
                     });
-                    setMessage("Phase updated.");
+                    setMessage("階段已更新。");
                 } else {
                     await createGardenPhase({
                         ...phaseForm,
                         lockedByCue: phaseForm.lockedByCue.trim(),
                     });
-                    setMessage("Phase created.");
+                    setMessage("已建立階段。");
                 }
                 setEditingPhase(null);
                 setPhaseForm({
@@ -156,24 +154,24 @@ export default function GardenAdminPage() {
                 });
                 await refresh();
             } catch (err: unknown) {
-                const msg = err instanceof Error ? err.message : "Failed to save phase";
+                const msg = err instanceof Error ? err.message : "儲存階段失敗";
                 setMessage(msg);
             }
         });
     };
 
     const handlePhaseDelete = async (phaseId: string) => {
-        const confirmDelete = window.confirm("Delete this phase and its levels?");
+        const confirmDelete = window.confirm("是否刪除此階段及其關卡？");
         if (!confirmDelete) return;
         setMessage(null);
         setBusyReset(true);
         try {
             await deleteGardenPhase(phaseId);
             setEditingPhase(null);
-            setMessage("Phase deleted.");
+            setMessage("階段已刪除。");
             await refresh();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Failed to delete phase";
+            const msg = err instanceof Error ? err.message : "刪除階段失敗";
             setMessage(msg);
         } finally {
             setBusyReset(false);
@@ -195,10 +193,10 @@ export default function GardenAdminPage() {
                 };
                 if (editingLevel) {
                     await updateGardenLevel(editingLevel.id, payload);
-                    setMessage("Level updated.");
+                    setMessage("關卡已更新。");
                 } else {
                     await createGardenLevel(payload);
-                    setMessage("Level created.");
+                    setMessage("已建立關卡。");
                 }
                 setEditingLevel(null);
                 setLevelForm((prev) => ({
@@ -211,24 +209,24 @@ export default function GardenAdminPage() {
                 }));
                 await refresh();
             } catch (err: unknown) {
-                const msg = err instanceof Error ? err.message : "Failed to save level";
+                const msg = err instanceof Error ? err.message : "儲存關卡失敗";
                 setMessage(msg);
             }
         });
     };
 
     const handleLevelDelete = async (levelId: string) => {
-        const confirmDelete = window.confirm("Delete this level?");
+        const confirmDelete = window.confirm("是否刪除此關卡？");
         if (!confirmDelete) return;
         setMessage(null);
         setBusyReset(true);
         try {
             await deleteGardenLevel(levelId);
             setEditingLevel(null);
-            setMessage("Level deleted.");
+            setMessage("關卡已刪除。");
             await refresh();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Failed to delete level";
+            const msg = err instanceof Error ? err.message : "刪除關卡失敗";
             setMessage(msg);
         } finally {
             setBusyReset(false);
@@ -236,16 +234,16 @@ export default function GardenAdminPage() {
     };
 
     const handleReset = async () => {
-        const confirmReset = window.confirm("Replace all phases and levels with the default seed?");
+        const confirmReset = window.confirm("是否以預設範例取代所有階段與關卡？");
         if (!confirmReset) return;
         setBusyReset(true);
         setMessage(null);
         try {
             await resetGardenToSeed();
-            setMessage("Seed content loaded.");
+            setMessage("已載入範例內容。");
             await refresh();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Failed to reset content";
+            const msg = err instanceof Error ? err.message : "重設內容失敗";
             setMessage(msg);
         } finally {
             setBusyReset(false);
@@ -256,45 +254,43 @@ export default function GardenAdminPage() {
         <div className="space-y-8">
             <div className="flex items-center gap-3">
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 font-semibold shadow-shadow">
-                    <LayoutDashboard className="mr-2 inline h-4 w-4" />
-                    Section 1 · Admin
+                    <LayoutDashboard className="mr-2 inline h-4 w-4" />第 1 部分 · 管理員
                 </div>
-                <div className="text-lg font-bold">Garden Builders Levels</div>
+                <div className="text-lg font-bold">花園建造者關卡</div>
             </div>
 
             <Card>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle>Phases</CardTitle>
+                        <CardTitle>階段</CardTitle>
                         <CardDescription>
-                            Section 1 supports exactly three phases. Edit existing phases; new
-                            phases beyond three are ignored by the game.
+                            第 1
+                            部分支援三個階段。編輯現有階段；超出三個的新增階段將不會被遊戲讀取。
                         </CardDescription>
                     </div>
                     <Badge variant="outline" className="flex items-center gap-1">
                         <Sprout className="h-4 w-4" />
-                        Data-driven
+                        資料驅動
                     </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
-                        Phases allowed: {phases.length}/{MAX_PHASES}. The game only reads three
-                        phases for Section 1.
+                        允許的階段數：{phases.length}/{MAX_PHASES}。遊戲僅讀取第 1 部分的三個階段。
                     </div>
                     <form className="grid gap-4 lg:grid-cols-5" onSubmit={handlePhaseSubmit}>
                         <div className="lg:col-span-2 space-y-2">
-                            <Label>Title</Label>
+                            <Label>標題</Label>
                             <Input
                                 required
                                 value={phaseForm.title}
                                 onChange={(e) =>
                                     setPhaseForm({ ...phaseForm, title: e.target.value })
                                 }
-                                placeholder="Prompt Blocks"
+                                placeholder="提示區塊"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Mode</Label>
+                            <Label>模式</Label>
                             <Select
                                 value={phaseForm.mode}
                                 onValueChange={(val) =>
@@ -305,13 +301,13 @@ export default function GardenAdminPage() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="blocks">Blocks</SelectItem>
-                                    <SelectItem value="text">Text</SelectItem>
+                                    <SelectItem value="blocks">區塊</SelectItem>
+                                    <SelectItem value="text">文字</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Order</Label>
+                            <Label>順序</Label>
                             <Input
                                 type="number"
                                 min={1}
@@ -321,11 +317,11 @@ export default function GardenAdminPage() {
                                 }
                             />
                             <p className="text-xs font-semibold text-foreground/70">
-                                Order must be unique; duplicates are rejected.
+                                順序必須唯一；重複的順序會被拒絕。
                             </p>
                         </div>
                         <div className="space-y-2">
-                            <Label>Locked by cue (optional)</Label>
+                            <Label>由提示鎖定（可選）</Label>
                             <Input
                                 value={phaseForm.lockedByCue}
                                 onChange={(e) =>
@@ -342,7 +338,7 @@ export default function GardenAdminPage() {
                                 onChange={(e) =>
                                     setPhaseForm({ ...phaseForm, description: e.target.value })
                                 }
-                                placeholder="Explain the goal for this phase"
+                                placeholder="說明此階段的目標"
                             />
                         </div>
                         <div className="flex items-end gap-2">
@@ -356,17 +352,17 @@ export default function GardenAdminPage() {
                                 {busyPhase ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Saving
+                                        儲存中
                                     </>
                                 ) : editingPhase ? (
                                     <>
                                         <Pencil className="h-4 w-4" />
-                                        Update phase
+                                        更新階段
                                     </>
                                 ) : (
                                     <>
                                         <Plus className="h-4 w-4" />
-                                        Add phase
+                                        新增階段
                                     </>
                                 )}
                             </Button>
@@ -432,7 +428,7 @@ export default function GardenAdminPage() {
                             {!sortedPhases.length && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center font-semibold">
-                                        No phases yet.
+                                        尚無階段。
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -444,32 +440,30 @@ export default function GardenAdminPage() {
             <Card>
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle>Levels</CardTitle>
-                        <CardDescription>
-                            Manage targets and optional prompt blocks per phase.
-                        </CardDescription>
+                        <CardTitle>關卡</CardTitle>
+                        <CardDescription>管理每個階段的目標與可選提示區塊。</CardDescription>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Button variant="outline" onClick={handleReset} disabled={busyReset}>
                             {busyReset ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    Resetting
+                                    重置中
                                 </>
                             ) : (
                                 <>
                                     <RotateCcw className="h-4 w-4" />
-                                    Load default seed
+                                    載入預設內容
                                 </>
                             )}
                         </Button>
-                        <Badge variant="outline">Real-time synced</Badge>
+                        <Badge variant="outline">即時同步</Badge>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <form className="grid gap-4 lg:grid-cols-4" onSubmit={handleLevelSubmit}>
                         <div className="space-y-2">
-                            <Label>Phase</Label>
+                            <Label>階段</Label>
                             <Select
                                 value={levelForm.phaseId}
                                 onValueChange={(val) =>
@@ -477,7 +471,7 @@ export default function GardenAdminPage() {
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Pick phase" />
+                                    <SelectValue placeholder="選擇階段" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {sortedPhases.map((phase) => (
@@ -489,7 +483,7 @@ export default function GardenAdminPage() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Order</Label>
+                            <Label>順序</Label>
                             <Input
                                 type="number"
                                 min={1}
@@ -503,18 +497,18 @@ export default function GardenAdminPage() {
                             />
                         </div>
                         <div className="lg:col-span-2 space-y-2">
-                            <Label>Target</Label>
+                            <Label>目標</Label>
                             <Input
                                 required
                                 value={levelForm.target}
                                 onChange={(e) =>
                                     setLevelForm({ ...levelForm, target: e.target.value })
                                 }
-                                placeholder="Describe the desired image"
+                                placeholder="描述希望的圖像"
                             />
                         </div>
                         <div className="lg:col-span-2 space-y-2">
-                            <Label>Blocks (one per line or comma)</Label>
+                            <Label>區塊（每行一個或以逗號分隔）</Label>
                             <Textarea
                                 rows={3}
                                 value={levelForm.blocks}
@@ -525,7 +519,7 @@ export default function GardenAdminPage() {
                             />
                         </div>
                         <div className="lg:col-span-2 space-y-2">
-                            <Label>Bonus blocks (optional)</Label>
+                            <Label>加分區塊（可選）</Label>
                             <Textarea
                                 rows={3}
                                 value={levelForm.bonusBlocks}
@@ -536,7 +530,7 @@ export default function GardenAdminPage() {
                             />
                         </div>
                         <div className="lg:col-span-2 space-y-2">
-                            <Label>Hint (optional)</Label>
+                            <Label>提示（可選）</Label>
                             <Textarea
                                 rows={2}
                                 value={levelForm.hint}
@@ -554,17 +548,17 @@ export default function GardenAdminPage() {
                                 {busyLevel ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        Saving
+                                        儲存中
                                     </>
                                 ) : editingLevel ? (
                                     <>
                                         <Pencil className="h-4 w-4" />
-                                        Update level
+                                        更新關卡
                                     </>
                                 ) : (
                                     <>
                                         <Plus className="h-4 w-4" />
-                                        Add level
+                                        新增關卡
                                     </>
                                 )}
                             </Button>
@@ -584,7 +578,7 @@ export default function GardenAdminPage() {
                                         }));
                                     }}
                                 >
-                                    Cancel
+                                    取消
                                 </Button>
                             )}
                         </div>
@@ -659,7 +653,7 @@ export default function GardenAdminPage() {
                                                     colSpan={5}
                                                     className="text-center font-semibold"
                                                 >
-                                                    No levels for this phase yet.
+                                                    尚無此階段的關卡。
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -669,7 +663,7 @@ export default function GardenAdminPage() {
                         ))}
                         {!groupedLevels.length && !loading && (
                             <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
-                                Add a phase to get started.
+                                請先新增一個階段以開始。
                             </div>
                         )}
                     </div>

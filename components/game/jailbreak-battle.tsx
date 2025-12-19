@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import {
     AlertTriangle,
     ArrowLeft,
@@ -11,6 +10,7 @@ import {
     Timer,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,8 +63,8 @@ export function JailbreakBattle() {
                 data: null,
                 error: locked
                     ? data.error ||
-                      "Section 2 is locked or Section 1 is incomplete. Finish Section 1 and wait for the admin cue."
-                    : data.error || "No match yet",
+                      "第 2 單元已鎖定或第 1 部分尚未完成。請完成第 1 部分並等待管理員提示。"
+                    : data.error || "尚無對戰",
             });
             return;
         }
@@ -117,11 +117,11 @@ export function JailbreakBattle() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.error || "Attack failed");
+                throw new Error(data.error || "攻擊失敗");
             }
 
             const reader = res.body?.getReader();
-            if (!reader) throw new Error("No response body");
+            if (!reader) throw new Error("沒有回應內容");
 
             const decoder = new TextDecoder();
             let buffer = "";
@@ -155,7 +155,7 @@ export function JailbreakBattle() {
                 }
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Attack failed";
+            const message = err instanceof Error ? err.message : "攻擊失敗";
             setMatchState((s) => ({ ...s, error: message }));
             setStreamingResponse("");
         } finally {
@@ -177,10 +177,10 @@ export function JailbreakBattle() {
                 credentials: "include",
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Patch failed");
+            if (!res.ok) throw new Error(data.error || "修補失敗");
             setMatchState({ loading: false, data: data.match });
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Patch failed";
+            const message = err instanceof Error ? err.message : "修補失敗";
             setMatchState((s) => ({ ...s, error: message }));
         } finally {
             setBusy(false);
@@ -192,7 +192,7 @@ export function JailbreakBattle() {
         return (
             <div className="inline-flex items-center gap-2 rounded-md border-4 border-foreground bg-secondary-background px-4 py-2 text-sm font-semibold shadow-shadow">
                 <Shield className="h-4 w-4" />
-                Seat {session.seatNumber} · {session.childId}
+                座位 {session.seatNumber} · {session.childId}
                 {session.name ? ` · ${session.name}` : ""}
             </div>
         );
@@ -206,7 +206,7 @@ export function JailbreakBattle() {
                 className={`flex ${viewportHeightClass} items-center justify-center bg-background`}
             >
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
-                    Connecting…
+                    連線中…
                 </div>
             </div>
         );
@@ -218,7 +218,7 @@ export function JailbreakBattle() {
                 className={`flex ${viewportHeightClass} items-center justify-center bg-background`}
             >
                 <div className="rounded-md border-4 border-foreground bg-secondary-background px-4 py-3 font-semibold shadow-shadow">
-                    Loading your battle…
+                    載入你的對戰…
                 </div>
             </div>
         );
@@ -231,19 +231,17 @@ export function JailbreakBattle() {
             >
                 <Card className="w-full max-w-xl">
                     <CardHeader className="flex items-center justify-between">
-                        <CardTitle>No match assigned</CardTitle>
-                        <Badge variant="outline">Section 2</Badge>
+                        <CardTitle>尚未分配對戰</CardTitle>
+                        <Badge variant="outline">第二單元</Badge>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <p className="font-semibold">
-                            Your coach has not assigned a Jailbreak battle yet.
-                        </p>
+                        <p className="font-semibold">你的教練尚未分配越獄對戰。</p>
                         <p className="text-sm text-foreground/70">
-                            Keep this tab open — the game will refresh once a match is created.
+                            請保持此分頁開啟 — 一旦建立對戰遊戲會自動重新整理。
                         </p>
                         <Button variant="ghost" onClick={() => fetchMatch()} className="gap-2">
                             <Timer className="h-4 w-4" />
-                            Check again
+                            再次檢查
                         </Button>
                         {matchState.error && (
                             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
@@ -281,12 +279,12 @@ export function JailbreakBattle() {
                         >
                             <a href="/game" className="gap-2">
                                 <ArrowLeft className="h-4 w-4" />
-                                Back
+                                返回
                             </a>
                         </Button>
                         {headerChip}
                         <Badge variant="secondary" className="text-sm font-bold uppercase">
-                            Section 2 · Jailbreak Battle
+                            第二單元 · 越獄對戰
                         </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold">
@@ -295,10 +293,10 @@ export function JailbreakBattle() {
                         ) : (
                             <ShieldCheck className="h-4 w-4" />
                         )}
-                        {isAttacker ? "Attacker" : "Defender"} · Cracks {match.cracksCompleted}/3
+                        {isAttacker ? "攻方" : "守方"} · 裂縫 {match.cracksCompleted}/3
                         {match.totalThemes && match.totalThemes > 1 && (
                             <span className="text-foreground/70">
-                                · Theme {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
+                                · 主題 {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
                             </span>
                         )}
                     </div>
@@ -314,14 +312,14 @@ export function JailbreakBattle() {
                             <div className="flex flex-wrap items-start gap-2">
                                 <StatusPill phase={match.currentPhase} />
                                 <Badge variant="outline">
-                                    Scores · A: {match.attackerScore} · D: {match.defenderScore}
+                                    得分 · 攻方: {match.attackerScore} · 守方: {match.defenderScore}
                                 </Badge>
                                 {match.totalThemes && match.totalThemes > 1 && (
                                     <Badge
                                         variant="outline"
                                         className="bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100"
                                     >
-                                        Level {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
+                                        關卡 {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
                                     </Badge>
                                 )}
                             </div>
@@ -360,7 +358,7 @@ export function JailbreakBattle() {
                         )}
                         <div className="space-y-3">
                             <Label className="text-xs uppercase tracking-tight text-foreground/70">
-                                Live log
+                                即時日誌
                             </Label>
                             <LogList logs={match.logs} streamingResponse={streamingResponse} />
                         </div>
@@ -381,7 +379,7 @@ function StatusPill({ phase }: { phase: PublicMatchView["currentPhase"] }) {
         return (
             <Badge variant="outline" className="bg-green-200 text-green-800">
                 <BadgeCheck className="mr-1 h-3 w-3" />
-                Level complete
+                關卡完成
             </Badge>
         );
     }
@@ -389,14 +387,14 @@ function StatusPill({ phase }: { phase: PublicMatchView["currentPhase"] }) {
         return (
             <Badge variant="outline" className="bg-amber-200 text-amber-900">
                 <Shield className="mr-1 h-3 w-3" />
-                Defender patching
+                守方修補中
             </Badge>
         );
     }
     return (
         <Badge variant="outline" className="bg-main text-main-foreground">
             <Swords className="mr-1 h-3 w-3" />
-            Attack phase
+            攻擊階段
         </Badge>
     );
 }
@@ -412,7 +410,7 @@ function TurnTimerPill({
 }) {
     if (phase === "COMPLETED") return null;
 
-    const label = secondsLeft !== null ? `${formatSeconds(secondsLeft)} left` : "Syncing timer…";
+    const label = secondsLeft !== null ? `${formatSeconds(secondsLeft)} 待此回合` : "計時器同步中…";
     const palette = turnExpired
         ? "border-destructive text-destructive"
         : "border-main text-foreground";
@@ -431,9 +429,9 @@ function TurnTimerPill({
             </div>
             <div className="leading-tight">
                 <div className="uppercase text-[10px] tracking-wide text-foreground/70">
-                    Turn clock
+                    回合計時
                 </div>
-                <div>{turnExpired ? "Time's up" : label}</div>
+                <div>{turnExpired ? "時間到" : label}</div>
             </div>
             <div className="rounded-sm bg-main px-2 text-[10px] font-black uppercase tracking-wide text-main-foreground">
                 1:00
@@ -467,21 +465,21 @@ function AttackerPanel({
         <div className="space-y-4">
             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
                 {phase === "DEFENDER_PATCH"
-                    ? "Defender is fixing their wall. Wait for the next turn."
-                    : "Send a clever prompt to break through the wall."}
+                    ? "守方正在修補牆壁。請等待下一回合。"
+                    : "發送巧妙提示以突破牆壁。"}
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-foreground/70">
                 <Timer className="h-3 w-3" />
                 {phase === "COMPLETED"
-                    ? "Level finished"
+                    ? "關卡完成"
                     : turnExpired
-                      ? "Time's up—hang tight for the next phase."
-                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left this turn`}
+                      ? "時間到 — 請稍候下一階段。"
+                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} 待此回合`}
             </div>
             <div className="space-y-2">
-                <Label>Terminal</Label>
+                <Label>終端機</Label>
                 <Textarea
-                    placeholder="Type your jailbreak attempt…"
+                    placeholder="輸入你的越獄嘗試…"
                     value={attackInput}
                     onChange={(e) => setAttackInput(e.target.value)}
                     disabled={!canAttack || busy || phase === "COMPLETED"}
@@ -492,18 +490,18 @@ function AttackerPanel({
                     onClick={onAttack}
                     disabled={!canAttack || busy || !attackInput.trim() || turnExpired}
                 >
-                    {busy ? "Working…" : "Launch attack"}
+                    {busy ? "執行中…" : "發動攻擊"}
                 </Button>
                 <CrackMeter cracks={cracks} />
             </div>
             {!canAttack && phase !== "COMPLETED" && (
                 <div className="text-xs font-semibold text-foreground/70">
-                    Wait for the defender to patch before sending the next attack.
+                    請等待守方修補後再發送下一次攻擊。
                 </div>
             )}
             {turnExpired && phase !== "COMPLETED" && (
                 <div className="rounded-md border-4 border-destructive bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive shadow-shadow">
-                    Turn timer hit 0:00. The game will flip to the next phase automatically.
+                    回合計時到 0:00。遊戲會自動切換到下一階段。
                 </div>
             )}
         </div>
@@ -533,8 +531,8 @@ function DefenderPanel({
 }) {
     const helper =
         phase === "DEFENDER_PATCH"
-            ? "Rewrite your developer prompt to block the next attack."
-            : "Locked while the attacker is probing your wall.";
+            ? "重寫你的開發提示以阻止下一次攻擊。"
+            : "當攻方試探牆壁時鎖定。";
     return (
         <div className="space-y-3">
             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
@@ -544,7 +542,7 @@ function DefenderPanel({
                 <div className="space-y-2">
                     <Label className="flex items-center gap-2 text-xs uppercase tracking-tight text-destructive">
                         <AlertTriangle className="h-4 w-4" />
-                        Breach Criteria (What the bot can&apos;t say)
+                        違規準則（AI 不可說的內容）
                     </Label>
                     <div className="rounded-md border-4 border-destructive bg-destructive/10 px-3 py-2 text-sm font-semibold shadow-shadow">
                         {breachCriteria}
@@ -554,34 +552,34 @@ function DefenderPanel({
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-tight text-foreground/70">
                 <Timer className="h-3 w-3" />
                 {phase === "COMPLETED"
-                    ? "Level finished"
+                    ? "關卡完成"
                     : turnExpired
-                      ? "Time's up—attacker resumes once the phase flips."
-                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} left to patch`}
+                      ? "時間到 — 回合切換後攻方恢復行動。"
+                      : `${formatSeconds(secondsLeft ?? TURN_LIMIT_SECONDS)} 待修補`}
             </div>
             <div className="space-y-2">
-                <Label>Developer Prompt</Label>
+                <Label>開發者提示</Label>
                 <Textarea
                     value={developerPrompt}
                     onChange={(e) => setDeveloperPrompt(e.target.value)}
                     disabled={!canPatch || busy || phase === "COMPLETED" || turnExpired}
-                    placeholder="Explain how the AI should behave to keep the secret safe."
+                    placeholder="說明 AI 應如何行為以保護秘密。"
                 />
             </div>
             <Button
                 onClick={onSave}
                 disabled={!canPatch || busy || !developerPrompt.trim() || turnExpired}
             >
-                {busy ? "Saving…" : "Save & resume attacks"}
+                {busy ? "儲存中…" : "儲存並恢復攻擊"}
             </Button>
             {!canPatch && phase !== "COMPLETED" && (
                 <div className="text-xs font-semibold text-foreground/70">
-                    You can patch only after the attacker cracks a layer.
+                    只有在攻方破解一層後才可修補。
                 </div>
             )}
             {turnExpired && phase !== "COMPLETED" && (
                 <div className="rounded-md border-4 border-destructive bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive shadow-shadow">
-                    You ran out of time. The turn will hand back to the attacker automatically.
+                    你已超時。回合將自動交回攻方。
                 </div>
             )}
         </div>
@@ -591,7 +589,7 @@ function DefenderPanel({
 function CrackMeter({ cracks }: { cracks: number }) {
     return (
         <div className="flex items-center gap-2 text-xs font-semibold">
-            <span>Security layers</span>
+            <span>安全層</span>
             {[0, 1, 2].map((i) => (
                 <div
                     key={i}
@@ -614,7 +612,7 @@ function LogList({
     if (logs.length === 0 && !streamingResponse) {
         return (
             <div className="rounded-md border-4 border-dashed border-border px-3 py-6 text-center text-sm font-semibold text-foreground/70">
-                No attempts yet.
+                尚未有嘗試。
             </div>
         );
     }
@@ -624,14 +622,14 @@ function LogList({
             {streamingResponse && (
                 <div className="rounded-md border-4 border-main bg-secondary-background p-3 shadow-shadow animate-pulse">
                     <div className="flex items-center justify-between text-xs font-semibold uppercase text-foreground/60">
-                        <span>Streaming...</span>
-                        <span className="text-main">LIVE</span>
+                        <span>串流中...</span>
+                        <span className="text-main">實況</span>
                     </div>
                     <div className="mt-2 space-y-2 text-sm">
                         <div>
                             <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-foreground/60">
                                 <Shield className="h-3 w-3" />
-                                AI Response
+                                AI 回應
                             </div>
                             <div className="rounded-md border-2 border-border bg-background px-3 py-2 text-sm">
                                 {streamingResponse}
@@ -655,14 +653,14 @@ function LogList({
                                     : "text-green-700 dark:text-green-500"
                             }
                         >
-                            {log.breach ? "BREACHED" : "SAFE"}
+                            {log.breach ? "已違規" : "安全"}
                         </span>
                     </div>
                     <div className="mt-2 space-y-2 text-sm">
                         <div>
                             <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-foreground/60">
                                 <Swords className="h-3 w-3" />
-                                Attacker
+                                攻方
                             </div>
                             <div className="rounded-md border-2 border-border bg-background px-3 py-2 font-mono text-xs">
                                 {log.attackerPrompt}
@@ -671,7 +669,7 @@ function LogList({
                         <div>
                             <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase text-foreground/60">
                                 <Shield className="h-3 w-3" />
-                                AI Response
+                                AI 回應
                             </div>
                             <div className="rounded-md border-2 border-border bg-background px-3 py-2 text-sm">
                                 {log.aiResponse}
@@ -681,13 +679,13 @@ function LogList({
                             {log.refereeReason && (
                                 <span className="flex items-center gap-1">
                                     <AlertTriangle className="h-3 w-3" />
-                                    Referee: {log.refereeReason}
+                                    裁判： {log.refereeReason}
                                 </span>
                             )}
                             {typeof log.tokensUsed === "number" && (
                                 <span className="flex items-center gap-1">
                                     <Timer className="h-3 w-3" />
-                                    Tokens: {log.tokensUsed}
+                                    代幣： {log.tokensUsed}
                                 </span>
                             )}
                         </div>
