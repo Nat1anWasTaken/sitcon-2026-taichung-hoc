@@ -79,7 +79,6 @@ export function buildSectionConfigFromRecords(
         }),
     } satisfies SectionConfig;
 }
-
 /**
  * Section 1 seed data (Image Generation)
  * 重點：hint 是給評審模型的驗收規格，不會顯示給學生。
@@ -118,20 +117,19 @@ export const sectionOneSeedLevels: GardenLevelRecord[] = [
         levelNumber: 1,
         target: "一隻戴著聖誕帽的貓咪，坐在一堆橘子旁",
         blocks: [
-            "生成",
-            "一隻",
-            "可愛",
-            "貓咪",
-            "戴著",
-            "聖誕帽",
-            "坐在",
-            "一堆",
-            "橘子",
-            "旁",
-            "卡通",
-            "風格",
+            "生成一張",
+            "卡通插畫風格",
+            "近景，主體置中且清楚",
+            "一隻可愛的貓咪",
+            "坐著（不是躺著或奔跑）",
+            "頭上戴著紅白聖誕帽（帽子要戴在頭上）",
+            "旁邊有一堆橘子",
+            "橘子至少 6 顆且聚在一起",
+            "橘子要像水果，有果皮質感（不是橙色球）",
+            "背景簡潔不搶主體",
+            "不要文字、水印、Logo",
         ],
-        bonusBlocks: ["細節豐富", "柔和光線", "粉彩", "工作室攝影"],
+        bonusBlocks: ["柔和打光", "高細節", "清晰對焦", "溫暖色調"],
         hint: `
 你是圖片驗收評審。請只回覆 JSON：{"verdict":"yes"|"no","reason":"short, kid-friendly sentence"}。
 
@@ -156,24 +154,19 @@ export const sectionOneSeedLevels: GardenLevelRecord[] = [
         levelNumber: 2,
         target: "貓咪把橘子當成球在玩，地上散落各種球類",
         blocks: [
-            "生成",
-            "一隻",
-            "可愛",
-            "貓咪",
-            "把",
-            "橘子",
-            "當成",
-            "球",
-            "在",
-            "玩",
-            "地上",
-            "散落",
-            "各種",
-            "球類",
-            "卡通",
-            "風格",
+            "生成一張",
+            "卡通插畫風格",
+            "近景或中景，地面區域要看得清楚",
+            "一隻可愛的貓咪",
+            "用貓爪拍打或推著橘子在玩（要有互動動作）",
+            "橘子要清楚像水果（有果皮質感）",
+            "地上散落球類",
+            "球至少 4 顆以上",
+            "至少兩種不同球（例如足球和網球）",
+            "球在前景或中景可辨識（不要全在遠處）",
+            "不要文字、水印、Logo",
         ],
-        bonusBlocks: ["可愛的眼睛", "近拍", "鮮豔色彩", "清晰聚焦"],
+        bonusBlocks: ["動態姿勢", "鮮豔色彩", "清晰聚焦", "可愛的大眼睛"],
         hint: `
 你是圖片驗收評審。請只回覆 JSON：{"verdict":"yes"|"no","reason":"short, kid-friendly sentence"}。
 
@@ -199,8 +192,21 @@ export const sectionOneSeedLevels: GardenLevelRecord[] = [
         phaseId: "phase-1",
         levelNumber: 3,
         target: "兩隻兔子在花園分享胡蘿蔔",
-        blocks: ["生成", "兩隻", "兔子", "分享", "胡蘿蔔", "在", "花園", "晴天"],
-        bonusBlocks: ["廣角", "戲劇性光線", "茂盛綠意", "高細節"],
+        blocks: [
+            "生成一張",
+            "冬日市集場景",
+            "畫面要有攤位與市集感",
+            "至少兩個市集線索（攤棚、攤桌、燈串、招牌、人群）",
+            "球池場景：大量彩色球聚在一起",
+            "至少 2 隻貓咪在球池中玩耍（有互動或動作）",
+            "至少 2 隻貓咪戴著紅白聖誕帽",
+            "球池旁邊有橘子攤位",
+            "攤位上要有一大堆橘子清楚陳列（像水果）",
+            "橘子攤位要靠近球池（不是遠遠背景）",
+            "廣角構圖，主體清楚，不要太小",
+            "不要文字、水印、Logo",
+        ],
+        bonusBlocks: ["節慶燈光", "色彩豐富", "高細節", "景深適中"],
         hint: `
 你是圖片驗收評審。請只回覆 JSON：{"verdict":"yes"|"no","reason":"short, kid-friendly sentence"}。
 
