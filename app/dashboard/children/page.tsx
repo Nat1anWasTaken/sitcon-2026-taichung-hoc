@@ -64,7 +64,7 @@ const formatDate = (ts?: ChildAccount["updatedAt"]) =>
     ts ? new Date(ts).toLocaleString() : "—";
 
 export default function ChildrenPage() {
-    const { children, loading, error } = useChildren();
+    const { children, loading, error, refresh } = useChildren();
     const [filterStatus, setFilterStatus] = useState<"all" | "active" | "disabled">("all");
     const [createOpen, setCreateOpen] = useState(false);
     const [progressChild, setProgressChild] = useState<ChildAccount | null>(null);
@@ -101,6 +101,7 @@ export default function ChildrenPage() {
                 setMessage("Child account created");
                 setFormState({ childId: "", seatNumber: "", password: "", name: "" });
                 setCreateOpen(false);
+                await refresh();
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : "Failed to create child";
                 setMessage(message);
@@ -193,6 +194,7 @@ export default function ChildrenPage() {
                                     key={child.childId}
                                     child={child}
                                     onProgress={() => setProgressChild(child)}
+                                    refresh={refresh}
                                 />
                             ))}
                         </TableBody>
@@ -286,7 +288,15 @@ export default function ChildrenPage() {
     );
 }
 
-function ChildRow({ child, onProgress }: { child: ChildAccount; onProgress: () => void }) {
+function ChildRow({
+    child,
+    onProgress,
+    refresh,
+}: {
+    child: ChildAccount;
+    onProgress: () => void;
+    refresh: () => Promise<void>;
+}) {
     const [openEdit, setOpenEdit] = useState(false);
     const [openReset, setOpenReset] = useState(false);
     const [name, setName] = useState(child.name ?? "");
@@ -298,6 +308,7 @@ function ChildRow({ child, onProgress }: { child: ChildAccount; onProgress: () =
         startSaving(async () => {
             await updateChildName(child.childId, name.trim());
             setOpenEdit(false);
+            await refresh();
         });
 
     const applyReset = () =>
@@ -305,11 +316,13 @@ function ChildRow({ child, onProgress }: { child: ChildAccount; onProgress: () =
             await resetChildPassword(child.childId, password);
             setPassword("");
             setOpenReset(false);
+            await refresh();
         });
 
     const toggleStatus = () =>
         startSaving(async () => {
             await setChildStatus(child.childId, disabled ? "active" : "disabled");
+            await refresh();
         });
 
     return (

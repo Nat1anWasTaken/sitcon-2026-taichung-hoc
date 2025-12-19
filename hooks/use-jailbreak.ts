@@ -9,16 +9,18 @@ type ThemeState = {
     loading: boolean;
     themes: JailbreakTheme[];
     error?: string;
+    refresh: () => Promise<void>;
 };
 
 type MatchState = {
     loading: boolean;
     matches: JailbreakMatch[];
     error?: string;
+    refresh: () => Promise<void>;
 };
 
 export function useJailbreakThemes(): ThemeState {
-    const { data, loading, error } = usePolling<JailbreakTheme[]>(
+    const { data, loading, error, refetch } = usePolling<JailbreakTheme[]>(
         "/api/admin/jailbreak/themes",
         5000,
         {
@@ -35,13 +37,13 @@ export function useJailbreakThemes(): ThemeState {
     );
 
     return useMemo(
-        () => ({ loading, themes: data ?? [], error }),
-        [data, error, loading]
+        () => ({ loading, themes: data ?? [], error, refresh: refetch }),
+        [data, error, loading, refetch]
     );
 }
 
 export function useJailbreakMatches(): MatchState {
-    const { data, loading, error } = usePolling<JailbreakMatch[]>(
+    const { data, loading, error, refetch } = usePolling<JailbreakMatch[]>(
         "/api/admin/jailbreak/matches",
         5000,
         {
@@ -58,7 +60,7 @@ export function useJailbreakMatches(): MatchState {
     );
 
     return useMemo(
-        () => ({ loading, matches: data ?? [], error }),
-        [data, error, loading]
+        () => ({ loading, matches: data ?? [], error, refresh: refetch }),
+        [data, error, loading, refetch]
     );
 }

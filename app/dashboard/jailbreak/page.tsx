@@ -59,8 +59,8 @@ import {
 import { JailbreakDifficulty, JailbreakMatch, JailbreakTheme } from "@/lib/jailbreak-types";
 
 export default function JailbreakAdminPage() {
-    const { themes, loading: themesLoading } = useJailbreakThemes();
-    const { matches, loading: matchesLoading } = useJailbreakMatches();
+    const { themes, loading: themesLoading, refresh: refreshThemes } = useJailbreakThemes();
+    const { matches, loading: matchesLoading, refresh: refreshMatches } = useJailbreakMatches();
     const { children } = useChildren();
 
     const [themeForm, setThemeForm] = useState({
@@ -119,6 +119,7 @@ export default function JailbreakAdminPage() {
                     breachCriteria: "",
                     difficulty: "medium",
                 });
+                await refreshThemes();
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : "Failed to save theme";
                 setThemeMessage(message);
@@ -135,6 +136,7 @@ export default function JailbreakAdminPage() {
                 await updateJailbreakTheme(editingTheme.id, editForm);
                 setEditMessage("Theme updated.");
                 setEditingTheme(null);
+                await refreshThemes();
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : "Failed to update theme";
                 setEditMessage(message);
@@ -153,6 +155,7 @@ export default function JailbreakAdminPage() {
         try {
             await deleteJailbreakTheme(editingTheme.id);
             setEditingTheme(null);
+            await refreshThemes();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Failed to delete theme";
             setEditMessage(message);
@@ -173,6 +176,7 @@ export default function JailbreakAdminPage() {
                 });
                 setMatchMessage("Match created. Kids can open /game/jailbreak.");
                 setMatchForm({ attacker: "", defender: "", themeId: "" });
+                await refreshMatches();
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : "Failed to create match";
                 setMatchMessage(message);
@@ -190,6 +194,7 @@ export default function JailbreakAdminPage() {
         try {
             await resetJailbreakToSeed();
             setThemeMessage("Seed themes loaded.");
+            await refreshThemes();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Failed to reset themes";
             setThemeMessage(message);
@@ -528,6 +533,7 @@ export default function JailbreakAdminPage() {
                                 themes={themes}
                                 onSkip={resetMatchToTheme}
                                 onFlip={flipMatchRoles}
+                                refresh={refreshMatches}
                             />
                         ))}
                     </div>
@@ -676,11 +682,13 @@ function MatchCard({
     themes,
     onSkip,
     onFlip,
+    refresh,
 }: {
     match: JailbreakMatch;
     themes: ReturnType<typeof useJailbreakThemes>["themes"];
     onSkip: (matchId: string, themeId: string) => Promise<void>;
     onFlip: (matchId: string) => Promise<void>;
+    refresh: () => Promise<void>;
 }) {
     const [busy, setBusy] = useState(false);
     const [flipping, setFlipping] = useState(false);
@@ -695,6 +703,7 @@ function MatchCard({
         setBusy(true);
         try {
             await onSkip(match.id, nextThemeId);
+            await refresh();
         } finally {
             setBusy(false);
         }
@@ -704,6 +713,7 @@ function MatchCard({
         setFlipping(true);
         try {
             await onFlip(match.id);
+            await refresh();
         } finally {
             setFlipping(false);
         }

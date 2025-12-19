@@ -10,6 +10,7 @@ export type GardenContentState = {
     phases: GardenPhase[];
     levels: GardenLevel[];
     error?: string;
+    refresh: () => Promise<void>;
 };
 
 export function useGardenContent(): GardenContentState {
@@ -17,6 +18,7 @@ export function useGardenContent(): GardenContentState {
         data: phases,
         loading: phaseLoading,
         error: phaseError,
+        refetch: refetchPhases,
     } = usePolling<GardenPhase[]>("/api/admin/garden/phases", 5000, {
         select: (payload) => (payload as { phases: GardenPhase[] }).phases ?? [],
         transform: (items) => [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
@@ -26,6 +28,7 @@ export function useGardenContent(): GardenContentState {
         data: levels,
         loading: levelLoading,
         error: levelError,
+        refetch: refetchLevels,
     } = usePolling<GardenLevel[]>("/api/admin/garden/levels", 5000, {
         select: (payload) => (payload as { levels: GardenLevel[] }).levels ?? [],
         transform: (items) =>
@@ -40,7 +43,10 @@ export function useGardenContent(): GardenContentState {
             phases: phases ?? [],
             levels: levels ?? [],
             error,
+            refresh: async () => {
+                await Promise.all([refetchPhases(), refetchLevels()]);
+            },
         }),
-        [phaseLoading, levelLoading, phases, levels, error]
+        [phaseLoading, levelLoading, phases, levels, error, refetchPhases, refetchLevels]
     );
 }

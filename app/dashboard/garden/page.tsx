@@ -46,7 +46,7 @@ function toList(value: string) {
 }
 
 export default function GardenAdminPage() {
-    const { phases, levels, loading } = useGardenContent();
+    const { phases, levels, loading, refresh } = useGardenContent();
 
     const [phaseForm, setPhaseForm] = useState({
         title: "",
@@ -154,6 +154,7 @@ export default function GardenAdminPage() {
                     order: phases.length + 1,
                     lockedByCue: "",
                 });
+                await refresh();
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : "Failed to save phase";
                 setMessage(msg);
@@ -170,6 +171,7 @@ export default function GardenAdminPage() {
             await deleteGardenPhase(phaseId);
             setEditingPhase(null);
             setMessage("Phase deleted.");
+            await refresh();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Failed to delete phase";
             setMessage(msg);
@@ -207,6 +209,7 @@ export default function GardenAdminPage() {
                     bonusBlocks: "",
                     hint: "",
                 }));
+                await refresh();
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : "Failed to save level";
                 setMessage(msg);
@@ -223,6 +226,7 @@ export default function GardenAdminPage() {
             await deleteGardenLevel(levelId);
             setEditingLevel(null);
             setMessage("Level deleted.");
+            await refresh();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Failed to delete level";
             setMessage(msg);
@@ -239,6 +243,7 @@ export default function GardenAdminPage() {
         try {
             await resetGardenToSeed();
             setMessage("Seed content loaded.");
+            await refresh();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Failed to reset content";
             setMessage(msg);

@@ -9,10 +9,11 @@ type CueState = {
     loading: boolean;
     cues: GameCue[];
     error?: string;
+    refresh: () => Promise<void>;
 };
 
 export function useCues(): CueState {
-    const { data, loading, error } = usePolling<GameCue[]>("/api/admin/cues", 5000, {
+    const { data, loading, error, refetch } = usePolling<GameCue[]>("/api/admin/cues", 5000, {
         select: (payload) => (payload as { cues: GameCue[] }).cues ?? [],
         transform: (cues) =>
             [...cues].sort((a, b) => {
@@ -23,7 +24,7 @@ export function useCues(): CueState {
     });
 
     return useMemo(
-        () => ({ loading, cues: data ?? [], error }),
-        [data, error, loading]
+        () => ({ loading, cues: data ?? [], error, refresh: refetch }),
+        [data, error, loading, refetch]
     );
 }
