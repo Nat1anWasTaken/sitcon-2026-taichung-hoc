@@ -6,22 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { adminFirestore } from "@/lib/firebase-admin";
+import { connectToDatabase } from "@/lib/mongodb";
+import { AgentKnowledgeDocModel, IAgentKnowledgeDoc } from "@/lib/models/agent-knowledge-doc";
 import { AgentKnowledgeDoc } from "@/lib/server/agent-types";
-import { Timestamp } from "firebase-admin/firestore";
 
 async function fetchDocs() {
-    if (!adminFirestore) throw new Error("Missing admin credentials");
-    const snap = await adminFirestore
-        .collection("agentKnowledgeDocs")
-        .orderBy("entityKey", "asc")
-        .get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AgentKnowledgeDoc, "id">) }));
+    await connectToDatabase();
+    const docs = await AgentKnowledgeDocModel.find({})
+        .sort({ entityKey: 1 })
+        .lean<IAgentKnowledgeDoc[]>();
+    return docs.map((doc) => ({ ...(doc as AgentKnowledgeDoc), id: doc.id ?? doc._id }));
 }
 
 async function createDoc(formData: FormData) {
     "use server";
-    if (!adminFirestore) throw new Error("Missing admin credentials");
     const id = String(formData.get("id") ?? "").trim();
     const entityKey = String(formData.get("entityKey") ?? "").trim();
     const sourceTitle = String(formData.get("sourceTitle") ?? "");
@@ -34,12 +32,20 @@ async function createDoc(formData: FormData) {
         entityKey,
         sourceTitle,
         sourceTier,
-        publishedAt: Timestamp.fromDate(publishedAt),
+        publishedAt,
         content,
         supersedesDocId: null,
         facts: null,
     };
-    await adminFirestore!.collection("agentKnowledgeDocs").doc(id).set(payload, { merge: true });
+    await connectToDatabase();
+    await AgentKnowledgeDocModel.updateOne(
+        { _id: id },
+        {
+            $set: { ...payload, id },
+            $setOnInsert: { _id: id },
+        },
+        { upsert: true }
+    );
     revalidatePath("/dashboard/agent/docs");
 }
 

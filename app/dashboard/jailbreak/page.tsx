@@ -394,13 +394,14 @@ export default function JailbreakAdminPage() {
                                         <TableCell className="text-xs font-semibold text-foreground/70">
                                             <div className="flex items-center gap-1">
                                                 <Clock3 className="h-4 w-4" />
-                                                {theme.updatedAt?.toDate
-                                                    ? theme.updatedAt
-                                                          .toDate()
-                                                          .toLocaleDateString(undefined, {
+                                                {theme.updatedAt
+                                                    ? new Date(theme.updatedAt).toLocaleDateString(
+                                                          undefined,
+                                                          {
                                                               month: "short",
                                                               day: "numeric",
-                                                          })
+                                                          }
+                                                      )
                                                     : "—"}
                                             </div>
                                         </TableCell>

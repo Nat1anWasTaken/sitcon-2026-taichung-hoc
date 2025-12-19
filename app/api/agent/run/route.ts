@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Timestamp } from "firebase-admin/firestore";
 
 import { AgentLevel } from "@/lib/server/agent-types";
 import { runLevelEngine } from "@/lib/server/agent-engine";
@@ -93,7 +92,7 @@ export async function POST(req: NextRequest) {
         childId: session.childId,
         levelId: level.id,
         stageType: level.stageType,
-        startedAt: Timestamp.now(), // recordAgentRun will set server timestamps
+        startedAt: new Date(),
         finishedAt: undefined,
         passed: engine.passed,
         finalAnswer: engine.finalAnswer,

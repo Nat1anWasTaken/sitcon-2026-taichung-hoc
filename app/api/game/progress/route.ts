@@ -1,27 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { adminFirestore } from "@/lib/firebase-admin";
 import { SectionProgress } from "@/lib/game-types";
+import { connectToDatabase } from "@/lib/mongodb";
+import { ChildProgressModel, IChildProgress, ISectionProgress } from "@/lib/models/child-progress";
 
 export async function GET(req: NextRequest) {
     const childId = req.nextUrl.searchParams.get("childId") ?? "";
     if (!childId) {
         return NextResponse.json({ error: "childId required" }, { status: 400 });
     }
-    if (!adminFirestore) {
-        return NextResponse.json({ error: "Server missing admin credentials" }, { status: 500 });
-    }
 
-    const snap = await adminFirestore
-        .collection("childProgress")
-        .doc(childId)
-        .collection("sections")
-        .get();
+    await connectToDatabase();
+    const doc = await ChildProgressModel.findById(childId).lean<IChildProgress | null>();
     const progress: Record<string, SectionProgress> = {};
-    snap.forEach((doc) => {
-        const data = doc.data() as SectionProgress;
-        progress[doc.id] = { ...data, sectionId: data.sectionId ?? doc.id };
-    });
+
+    const sections = doc?.sections;
+    if (sections) {
+        if (sections instanceof Map) {
+            for (const [sectionId, data] of sections.entries()) {
+                const entry = data as ISectionProgress;
+                progress[sectionId] = {
+                    ...(entry as SectionProgress),
+                    sectionId: entry.sectionId ?? sectionId,
+                };
+            }
+        } else {
+            const entries = Object.entries(sections as Record<string, ISectionProgress>);
+            entries.forEach(([sectionId, data]) => {
+                progress[sectionId] = {
+                    ...(data as SectionProgress),
+                    sectionId: data.sectionId ?? sectionId,
+                };
+            });
+        }
+    }
 
     return NextResponse.json({ progress });
 }

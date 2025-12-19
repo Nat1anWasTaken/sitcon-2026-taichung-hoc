@@ -22,8 +22,10 @@ function coerceDate(value: unknown): Date | undefined {
         if (!Number.isNaN(parsed.getTime())) return parsed;
     }
     if (typeof value === "object" && "toDate" in (value as object)) {
-        const fn = (value as { toDate?: () => Date }).toDate;
-        if (fn) return fn();
+        const maybeTimestamp = value as { toDate?: () => Date };
+        if (typeof maybeTimestamp.toDate === "function") {
+            return maybeTimestamp.toDate();
+        }
     }
     return undefined;
 }

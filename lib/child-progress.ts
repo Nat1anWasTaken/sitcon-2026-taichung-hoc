@@ -1,8 +1,4 @@
 "use client";
-
-import { DocumentSnapshot, Timestamp, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-
-import { sectionProgressDoc } from "./collections";
 import { SectionProgress } from "./game-types";
 
 const SECTION_DEFAULT: Omit<SectionProgress, "updatedAt"> = {
@@ -29,21 +25,8 @@ function coerceSectionId(sectionId: string) {
 export function getDefaultSectionProgress(sectionId: string): SectionProgress {
     return {
         ...coerceSectionId(sectionId),
-        updatedAt: Timestamp.now(),
+        updatedAt: new Date(),
     };
-}
-
-export function mergeSectionProgressSnapshot(
-    sectionId: string,
-    snap: DocumentSnapshot<SectionProgress> | null
-): SectionProgress {
-    if (snap && snap.exists()) {
-        return {
-            ...coerceSectionId(sectionId),
-            ...snap.data(),
-        };
-    }
-    return getDefaultSectionProgress(sectionId);
 }
 
 export async function saveChildSectionProgress(
@@ -51,16 +34,24 @@ export async function saveChildSectionProgress(
     sectionId: string,
     changes: Partial<SectionProgress>
 ) {
-    const ref = sectionProgressDoc(childId, sectionId);
-    const snap = await getDoc(ref);
-    const current = snap.exists() ? snap.data() : getDefaultSectionProgress(sectionId);
-
     const payload: Partial<SectionProgress> = {
         ...coerceSectionId(sectionId),
-        ...current,
         ...changes,
-        updatedAt: serverTimestamp() as SectionProgress["updatedAt"],
     };
 
-    await setDoc(ref, payload, { merge: true });
+    const res = await fetch(
+        `/api/admin/children/${encodeURIComponent(childId)}/progress/${encodeURIComponent(
+            sectionId
+        )}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || "Failed to save progress");
+    }
 }

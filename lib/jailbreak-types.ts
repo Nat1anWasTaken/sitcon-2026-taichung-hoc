@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase/firestore";
-
 export type JailbreakDifficulty = "easy" | "medium" | "hard";
 
 export type JailbreakTheme = {
@@ -9,8 +7,8 @@ export type JailbreakTheme = {
     difficulty: JailbreakDifficulty;
     adminPrompt: string;
     breachCriteria: string;
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    createdAt: Date | string;
+    updatedAt: Date | string;
 };
 
 export type MatchPhase = "ATTACK_PHASE" | "DEFENDER_PATCH" | "COMPLETED";
@@ -38,13 +36,13 @@ export type JailbreakMatch = {
     /**
      * Server-assigned deadline for the active phase. Turn expires after this timestamp.
      */
-    phaseExpiresAt?: Timestamp;
+    phaseExpiresAt?: Date | string;
     /**
      * Array of theme IDs that have been completed (3 cracks) in this match.
      */
     completedThemeIds?: string[];
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    createdAt: Date | string;
+    updatedAt: Date | string;
 };
 
 export type JailbreakTurn = {
@@ -55,7 +53,7 @@ export type JailbreakTurn = {
     breach: boolean;
     refereeReason?: string;
     tokensUsed?: number;
-    createdAt: Timestamp;
+    createdAt: Date | string;
 };
 
 export type PublicMatchView = {

@@ -16,8 +16,8 @@ export function useCues(): CueState {
         select: (payload) => (payload as { cues: GameCue[] }).cues ?? [],
         transform: (cues) =>
             [...cues].sort((a, b) => {
-                const tA = a.updatedAt?.toMillis?.() ?? 0;
-                const tB = b.updatedAt?.toMillis?.() ?? 0;
+                const tA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                const tB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
                 return tB - tA;
             }),
     });

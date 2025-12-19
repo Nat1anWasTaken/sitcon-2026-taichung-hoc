@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase/firestore";
-
 export type AgentStageType = "HALLUCINATION" | "TOOLS" | "DEFENSE";
 
 export type AgentStage = {
@@ -47,7 +45,7 @@ export type AgentKnowledgeDoc = {
     entityKey: string;
     sourceTitle: string;
     sourceTier: KnowledgeSourceTier;
-    publishedAt: Timestamp;
+    publishedAt: Date | string;
     supersedesDocId?: string | null;
     content: string;
     facts?: Record<string, unknown> | null;
@@ -64,8 +62,8 @@ export type AgentRun = {
     childId: string;
     levelId: string;
     stageType: AgentStageType;
-    startedAt: Timestamp;
-    finishedAt?: Timestamp;
+    startedAt: Date | string;
+    finishedAt?: Date | string;
     passed: boolean;
     finalAnswer?: string;
     finalAnswerJson?: Record<string, unknown> | null;

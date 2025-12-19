@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase/firestore";
-
 export type PhaseId = 1 | 2 | 3;
 
 export type SectionProgress = {
@@ -15,7 +13,7 @@ export type SectionProgress = {
     lastTarget?: string;
     lastMatch?: boolean;
     lastFeedback?: string;
-    updatedAt: Timestamp;
+    updatedAt: Date | string;
     cuesConsumed?: Record<string, boolean>;
 };
 
@@ -24,6 +22,6 @@ export type GameCue = {
     type: "start-phase-3" | "unlock-blocks" | "note" | string;
     active: boolean;
     payload?: Record<string, unknown>;
-    createdAt: Timestamp;
-    updatedAt: Timestamp;
+    createdAt: Date | string;
+    updatedAt: Date | string;
 };

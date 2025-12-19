@@ -61,7 +61,7 @@ import { ChildAccount } from "@/lib/types";
 import { useGardenContent } from "@/hooks/use-garden";
 
 const formatDate = (ts?: ChildAccount["updatedAt"]) =>
-    ts ? new Date(ts.toDate()).toLocaleString() : "—";
+    ts ? new Date(ts).toLocaleString() : "—";
 
 export default function ChildrenPage() {
     const { children, loading, error } = useChildren();
