@@ -2,7 +2,7 @@ import mongoose, { Schema, Model } from "mongoose";
 
 // Interface for the document
 export interface IJailbreakTurn {
-    _id: string; // Firestore document ID
+    _id: string; // Document ID (migrated from Firestore)
     id: string; // Same as _id for compatibility
     matchId: string;
     attackerPrompt: string;

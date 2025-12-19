@@ -9,7 +9,7 @@ export interface IAgentRunUsage {
 
 // Interface for the document
 export interface IAgentRun {
-    _id: string; // Firestore document ID
+    _id: string; // Document ID (migrated from Firestore)
     id: string; // Same as _id for compatibility
     childId: string;
     levelId: string;

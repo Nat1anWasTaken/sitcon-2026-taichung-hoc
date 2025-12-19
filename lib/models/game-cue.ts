@@ -2,7 +2,7 @@ import mongoose, { Schema, Model } from "mongoose";
 
 // Interface for the document
 export interface IGameCue {
-    _id: string; // Firestore document ID
+    _id: string; // Document ID (migrated from Firestore)
     id: string; // Same as _id for compatibility
     type: string; // "start-phase-3" | "unlock-blocks" | "note" | string
     active: boolean;

@@ -10,7 +10,7 @@ export interface IAgentLevelExpected {
 
 // Interface for the document
 export interface IAgentLevel {
-    _id: string; // Firestore document ID
+    _id: string; // Document ID (migrated from Firestore)
     id: string; // Same as _id for compatibility
     stageType: "HALLUCINATION" | "TOOLS" | "DEFENSE";
     order: number;
