@@ -18,12 +18,15 @@ export async function fetchSectionOneConfig(): Promise<{
 
     const phases = phasesDocs.map((data) => {
         const id = data.id ?? data._id;
+        const lockedByCue =
+            data.lockedByCue ||
+            (id === "phase-2" ? "start-phase-2" : id === "phase-3" ? "start-phase-3" : undefined);
         return {
             id,
             title: data.title,
             mode: data.mode ?? "blocks",
             description: data.description || undefined,
-            lockedByCue: data.lockedByCue || undefined,
+            lockedByCue,
             order: Number(data.order ?? 0),
         };
     });

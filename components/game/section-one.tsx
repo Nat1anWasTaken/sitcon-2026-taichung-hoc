@@ -170,34 +170,40 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     }, [bonusBlocksActive, levelConfig, phaseConfig?.mode]);
 
     const lockedCueId = phaseConfig?.lockedByCue;
-    const lockedByCue = lockedCueId ? !cues.some((c) => c.id === lockedCueId && c.active) : false;
-    const phase3Locked =
-        progress?.currentPhase === 3
-            ? progress?.phase1Complete === false ||
-              progress?.phase2Complete === false ||
-              lockedByCue
-            : lockedByCue;
-    const isPhaseLocked = progress?.currentPhase === 3 ? phase3Locked : lockedByCue;
-    const isSectionComplete = progress?.sectionComplete ?? false;
-    const lockReason = useMemo(() => {
-        if (!isPhaseLocked || !phaseConfig) return null;
-        if (phase3Locked && progress?.currentPhase === 3) {
-            if (progress?.phase1Complete === false || progress?.phase2Complete === false) {
-                return "Finish the earlier phases first, then the admin will unlock the finale.";
-            }
-            return "Waiting for the admin cue to start the final phase.";
+    const isLockedByCue = lockedCueId ? !cues.some((c) => c.id === lockedCueId && c.active) : false;
+
+    const isPhaseLocked = useMemo(() => {
+        if (!progress) return false;
+        if (progress.currentPhase === 3) {
+            return progress.phase1Complete === false || progress.phase2Complete === false || isLockedByCue;
         }
-        if (lockedByCue) return "An admin cue is needed to begin this phase.";
-        return "This phase is locked right now.";
-    }, [
-        isPhaseLocked,
-        phase3Locked,
-        lockedByCue,
-        phaseConfig,
-        progress?.currentPhase,
-        progress?.phase1Complete,
-        progress?.phase2Complete,
-    ]);
+        if (progress.currentPhase === 2) {
+            return progress.phase1Complete === false || isLockedByCue;
+        }
+        return isLockedByCue;
+    }, [progress, isLockedByCue]);
+
+    const lockReason = useMemo(() => {
+        if (!isPhaseLocked || !progress) return null;
+
+        if (progress.currentPhase === 3) {
+            if (progress.phase1Complete === false || progress.phase2Complete === false) {
+                return "Finish the earlier phases first, then the coach will unlock the final quest.";
+            }
+            return "Your coach hasn't started the final quest yet. Keep this tab open!";
+        }
+
+        if (progress.currentPhase === 2) {
+            if (progress.phase1Complete === false) {
+                return "Finish Phase 1 first to unlock the next challenge.";
+            }
+            return "Your coach hasn't started Phase 2 yet. Get ready to type your own prompts!";
+        }
+
+        return "This phase is locked by your coach. Wait for instructions!";
+    }, [isPhaseLocked, progress]);
+
+    const isSectionComplete = progress?.sectionComplete ?? false;
 
     useEffect(() => {
         if (isSectionComplete && !completedNotifiedRef.current) {
@@ -307,8 +313,10 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     return (
         <div className="w-full">
             <SectionCompleteOverlay open={isSectionComplete} />
-            {!isSectionComplete && <LockedOverlay open={!!lockReason} message={lockReason ?? ""} />}
             <div className="mx-auto flex max-w-6xl flex-col gap-6">
+                {!isSectionComplete && isPhaseLocked && lockReason && (
+                    <PhaseLockedBanner message={lockReason} />
+                )}
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 font-semibold shadow-shadow">
@@ -373,9 +381,9 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                                         </>
                                     )}
                                 </Button>
-                                {phase3Locked && progress.currentPhase === 3 && (
+                                {isPhaseLocked && (
                                     <span className="text-sm font-semibold text-foreground/70">
-                                        Waiting for admin cue + everyone to finish.
+                                        Waiting for coach instructions…
                                     </span>
                                 )}
                             </div>
@@ -401,7 +409,7 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
                             </div>
                             <TargetProgress
                                 progress={progress}
-                                phase3Locked={phase3Locked}
+                                isPhaseLocked={isPhaseLocked}
                                 sectionComplete={isSectionComplete}
                             />
                         </div>
@@ -419,26 +427,24 @@ export function SectionOneGame({ onSectionComplete }: SectionOneProps = {}) {
     );
 }
 
-function LockedOverlay({ open, message }: { open: boolean; message: string }) {
-    if (!open) return null;
+function PhaseLockedBanner({ message }: { message: string }) {
     return (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm">
-            <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4">
-                <div className="relative w-full rounded-2xl border-4 border-foreground bg-secondary-background p-6 shadow-shadow">
-                    <div className="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full border-4 border-foreground bg-main px-4 py-1 text-xs font-semibold shadow-shadow">
-                        <Lock className="h-4 w-4" />
-                        Phase Locked
-                    </div>
-                    <div className="space-y-3 text-center">
-                        <p className="text-xl font-black text-foreground">Hold tight!</p>
-                        <p className="text-base font-semibold text-foreground/80">{message}</p>
-                        <p className="text-sm font-semibold text-foreground/60">
-                            We&apos;ll let you know as soon as this phase opens. Keep this tab open.
-                        </p>
-                    </div>
+        <Card className="border-4 border-foreground bg-secondary-background shadow-shadow">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    <CardTitle className="text-base">Phase locked</CardTitle>
                 </div>
-            </div>
-        </div>
+                <BadgeChip>Waiting on coach</BadgeChip>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                <p className="font-semibold text-foreground">{message}</p>
+                <p className="text-sm font-semibold text-foreground/70">
+                    Keep this tab open — we&apos;ll unlock it as soon as the coach starts the next
+                    phase.
+                </p>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -923,11 +929,11 @@ function TextPromptInput({
 
 function TargetProgress({
     progress,
-    phase3Locked,
+    isPhaseLocked,
     sectionComplete,
 }: {
     progress: SectionProgress;
-    phase3Locked: boolean;
+    isPhaseLocked: boolean;
     sectionComplete: boolean;
 }) {
     const phaseBadges = [
@@ -936,7 +942,7 @@ function TargetProgress({
         {
             label: "Phase 3",
             done: !!progress.phase3Complete || sectionComplete,
-            locked: phase3Locked,
+            locked: isPhaseLocked && progress.currentPhase === 3,
         },
     ];
 

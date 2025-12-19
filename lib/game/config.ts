@@ -93,7 +93,9 @@ export const sectionOneSeedPhases: GardenPhaseRecord[] = [
         title: "Type Your Prompt",
         mode: "text",
         order: 2,
-        description: "No blocks now! Type a clear prompt to match the target image.",
+        lockedByCue: "start-phase-2",
+        description:
+            "Unlocked by the admin when everyone finishes phase 1. No blocks now! Type a clear prompt.",
     },
     {
         id: "phase-3",

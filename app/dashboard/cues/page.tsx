@@ -11,6 +11,11 @@ import { setCueActive } from "@/lib/cues-client";
 
 const cueCatalog = [
     {
+        id: "start-phase-2",
+        title: "Start Phase 2",
+        description: "Unlocks Phase 2 for all kids who finished Phase 1.",
+    },
+    {
         id: "start-phase-3",
         title: "Start Phase 3",
         description: "Unlocks the final quest for all kids who finished phases 1 & 2.",

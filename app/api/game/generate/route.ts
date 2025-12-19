@@ -44,6 +44,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "No level configured" }, { status: 400 });
     }
 
+    if (activePhase.lockedByCue) {
+        const cue = await getCue(activePhase.lockedByCue);
+        if (!cue?.active) {
+            return NextResponse.json(
+                { error: "Phase locked by coach cue" },
+                { status: 423 }
+            );
+        }
+    }
+
     const target = activeLevel.target || progress.lastTarget || "the target";
 
     const { image } = await generateGameImage(prompt);
