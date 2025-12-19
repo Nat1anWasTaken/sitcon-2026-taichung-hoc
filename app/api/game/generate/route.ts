@@ -9,6 +9,20 @@ import { fetchSectionOneConfig } from "@/lib/server/section-one";
 import { requireChildSession } from "@/lib/server/session";
 import { uploadGameImageToStorage } from "@/lib/server/storage";
 
+const normalizePromptForMatch = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+const isPromptCopyingTarget = (prompt: string, target: string) => {
+    if (!prompt || !target) return false;
+    const normalizedPrompt = normalizePromptForMatch(prompt);
+    const normalizedTarget = normalizePromptForMatch(target);
+    if (!normalizedTarget) return false;
+    return normalizedPrompt.includes(normalizedTarget);
+};
+
 export async function POST(req: NextRequest) {
     let session;
     try {
@@ -42,6 +56,17 @@ export async function POST(req: NextRequest) {
 
     if (!activePhase || !activeLevel) {
         return NextResponse.json({ error: "No level configured" }, { status: 400 });
+    }
+
+    if (
+        activePhase.mode === "text" &&
+        (progress.currentPhase === 2 || progress.currentPhase === 3) &&
+        isPromptCopyingTarget(prompt, activeLevel.target)
+    ) {
+        return NextResponse.json(
+            { error: "Prompt contains the target title" },
+            { status: 400 }
+        );
     }
 
     if (activePhase.lockedByCue) {
