@@ -235,6 +235,10 @@ export function JailbreakBattle() {
                         <Badge variant="outline">第二單元</Badge>
                     </CardHeader>
                     <CardContent className="space-y-3">
+                        <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
+                            座位 {session.seatNumber} · {session.childId}
+                            {session.name ? ` · ${session.name}` : ""}
+                        </div>
                         <p className="font-semibold">講師尚未分配文字攻防對戰。</p>
                         <p className="text-sm text-foreground/70">
                             請保持此分頁開啟 — 一旦建立對戰遊戲會自動重新整理。
