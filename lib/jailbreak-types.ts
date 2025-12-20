@@ -61,6 +61,7 @@ export type PublicMatchView = {
     role: "attacker" | "defender";
     themeTitle: string;
     themeDescription: string;
+    adminPrompt?: string;
     cracksCompleted: number;
     currentPhase: MatchPhase;
     attackerScore: number;

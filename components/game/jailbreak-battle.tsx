@@ -392,6 +392,7 @@ export function JailbreakBattle() {
                             />
                         ) : (
                             <DefenderPanel
+                                adminPrompt={match.adminPrompt}
                                 developerPrompt={developerDraft}
                                 setDeveloperPrompt={(value) => {
                                     setDeveloperDraft(value);
@@ -566,6 +567,7 @@ function AttackerPanel({
 }
 
 function DefenderPanel({
+    adminPrompt,
     developerPrompt,
     setDeveloperPrompt,
     onSave,
@@ -576,6 +578,7 @@ function DefenderPanel({
     secondsLeft,
     turnExpired,
 }: {
+    adminPrompt?: string;
     developerPrompt: string;
     setDeveloperPrompt: (v: string) => void;
     onSave: () => void;
@@ -595,6 +598,16 @@ function DefenderPanel({
             <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
                 {helper}
             </div>
+            {adminPrompt && (
+                <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-tight text-foreground/70">
+                        管理提示（秘密）
+                    </Label>
+                    <div className="rounded-md border-4 border-foreground bg-secondary-background px-3 py-2 text-sm font-semibold shadow-shadow">
+                        {adminPrompt}
+                    </div>
+                </div>
+            )}
             {breachCriteria && (
                 <div className="space-y-2">
                     <Label className="flex items-center gap-2 text-xs uppercase tracking-tight text-destructive">

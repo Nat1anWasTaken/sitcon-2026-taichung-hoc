@@ -176,6 +176,7 @@ async function sanitizeMatch(
         attemptCount: match.attemptCount,
         status: match.status,
         maxAttackAttempts: MAX_ATTACK_ATTEMPTS,
+        adminPrompt: role === "defender" ? match.adminPrompt : undefined,
         developerPrompt: role === "defender" ? match.developerPrompt : undefined,
         breachCriteria: role === "defender" ? match.breachCriteria : undefined,
         phaseExpiresAt: match.phaseExpiresAt?.toISOString(),
