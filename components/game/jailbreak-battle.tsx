@@ -311,6 +311,7 @@ export function JailbreakBattle() {
     const canPatchPhase = matchState.data?.currentPhase === "DEFENDER_PATCH" && role === "defender";
     const canAttack = matchState.data?.currentPhase === "ATTACK_PHASE" && !turnExpired;
     const canPatch = canPatchPhase && !turnExpired;
+    const attemptsThisPhase = match.currentPhase === "ATTACK_PHASE" ? match.attemptCount : 0;
 
     return (
         <div className="min-h-full bg-background px-4 py-8">
@@ -339,7 +340,7 @@ export function JailbreakBattle() {
                         ) : (
                             <ShieldCheck className="h-4 w-4" />
                         )}
-                        {isAttacker ? "攻方" : "守方"} · 裂縫 {match.cracksCompleted}/3
+                        {isAttacker ? "攻方" : "守方"} · 裂縫 {match.cracksCompleted}/1
                         {match.totalThemes && match.totalThemes > 1 && (
                             <span className="text-foreground/70">
                                 · 主題 {(match.themesCompleted ?? 0) + 1}/{match.totalThemes}
@@ -408,9 +409,14 @@ export function JailbreakBattle() {
                             />
                         )}
                         <div className="space-y-3">
-                            <Label className="text-xs uppercase tracking-tight text-foreground/70">
-                                即時日誌
-                            </Label>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Label className="text-xs uppercase tracking-tight text-foreground/70">
+                                    即時日誌
+                                </Label>
+                                <Badge variant="outline" className="text-xs font-semibold">
+                                    攻擊嘗試 {attemptsThisPhase}/{match.maxAttackAttempts}
+                                </Badge>
+                            </div>
                             <LogList logs={match.logs} streamingResponse={streamingResponse} />
                         </div>
                     </CardContent>
@@ -641,7 +647,7 @@ function CrackMeter({ cracks }: { cracks: number }) {
     return (
         <div className="flex items-center gap-2 text-xs font-semibold">
             <span>安全層</span>
-            {[0, 1, 2].map((i) => (
+            {[0].map((i) => (
                 <div
                     key={i}
                     className={`h-4 w-8 rounded-sm border-2 border-foreground shadow-shadow ${

@@ -716,7 +716,7 @@ function MatchCard({
                     <CardDescription>{match.themeDescription}</CardDescription>
                     <div className="text-xs font-semibold text-foreground/70">
                         攻：{match.attackerChildId} · 守：{match.defenderChildId} · 裂縫{" "}
-                        {match.cracksCompleted}/3
+                        {match.cracksCompleted}/1
                         {match.completedThemeIds && match.completedThemeIds.length > 0 && (
                             <span> · 已完成主題：{match.completedThemeIds.length}</span>
                         )}
@@ -764,7 +764,7 @@ function MatchCard({
                         <Badge variant="outline" className="bg-green-200 text-green-800">
                             已完成
                         </Badge>
-                    ) : match.cracksCompleted >= 3 ? (
+                    ) : match.cracksCompleted >= 1 ? (
                         <Badge variant="outline" className="bg-amber-200 text-amber-900">
                             需重置
                         </Badge>

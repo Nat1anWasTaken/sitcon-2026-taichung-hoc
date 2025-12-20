@@ -86,7 +86,7 @@ Two-player adversarial game where one child attacks AI system security while the
         - Breach criteria visible
         - Current phase: "ATTACK_PHASE"
         - Input field for attack prompt ready
-        - Shows 0/3 cracks completed
+        - Shows 0/1 cracks completed
 
 3. **Verify assignment (Defender side)**
     - Login as Child B
@@ -96,7 +96,7 @@ Two-player adversarial game where one child attacks AI system security while the
         - Same theme displayed
         - Shows current developer prompt (protection code)
         - Phase: Waiting for attacker (initially)
-        - Shows 0/3 cracks completed
+        - Shows 0/1 cracks completed
 
 4. **Check admin dashboard**
     - Admin: Refresh `/dashboard/jailbreak`
@@ -104,7 +104,7 @@ Two-player adversarial game where one child attacks AI system security while the
         - New match appears in list
         - Shows status: "Active"
         - Displays attacker/defender names
-        - Shows 0/3 cracks
+        - Shows 0/1 cracks
 
 ---
 
@@ -134,7 +134,7 @@ Two-player adversarial game where one child attacks AI system security while the
     - **Expected:**
         - AI response shown
         - Verdict: "Attack Successful" (breach = true)
-        - Crack counter increments (1/3)
+        - Crack counter increments (1/1)
         - Attacker score increases
         - Phase changes to DEFENDER_PATCH
         - Attacker sees waiting message
@@ -197,11 +197,11 @@ Two-player adversarial game where one child attacks AI system security while the
 
 #### Steps:
 
-1. **Reach 3 cracks**
+1. **Reach 1 crack**
     - Attacker & Defender: Continue attack/defense cycles
-    - Ensure 3 successful breaches occur
+    - Ensure 1 successful breach occurs
     - **Expected:**
-        - Crack counter reaches 3/3
+        - Crack counter reaches 1/1
         - Match status changes to COMPLETED
         - Final scores displayed for both players
         - "Match Completed" message shown

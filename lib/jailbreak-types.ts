@@ -65,7 +65,9 @@ export type PublicMatchView = {
     currentPhase: MatchPhase;
     attackerScore: number;
     defenderScore: number;
+    attemptCount: number;
     status?: JailbreakMatch["status"];
+    maxAttackAttempts: number;
     developerPrompt?: string;
     breachCriteria?: string;
     logs: Array<{

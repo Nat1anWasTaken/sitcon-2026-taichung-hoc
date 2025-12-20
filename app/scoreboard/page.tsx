@@ -309,7 +309,7 @@ export default function ScoreboardPage() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-sm font-semibold">
-                                                        {row.cracksCompleted} / 3
+                                                        {row.cracksCompleted} / 1
                                                     </TableCell>
                                                     <TableCell className="text-sm">
                                                         <Badge

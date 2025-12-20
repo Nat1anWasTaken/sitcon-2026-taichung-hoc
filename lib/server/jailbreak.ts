@@ -12,6 +12,7 @@ import { IJailbreakTurn, JailbreakTurnModel } from "../models/jailbreak-turn";
 const START_SECTION_TWO_CUE = "start-section-2";
 const SECTION_ONE_ID = "section-1";
 const TURN_DURATION_MS = 60_000;
+const MAX_ATTACK_ATTEMPTS = 3;
 
 function buildTurnDeadline() {
     return new Date(Date.now() + TURN_DURATION_MS);
@@ -99,14 +100,11 @@ async function resolveExpiredPhase(match: IJailbreakMatch): Promise<IJailbreakMa
     };
 
     if (match.currentPhase === "ATTACK_PHASE") {
-        const nextAttempt = match.attemptCount + 1;
-        const attemptCount = nextAttempt >= 3 ? 0 : nextAttempt;
-        const currentPhase: MatchPhase = nextAttempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
         update = {
             ...update,
-            attemptCount,
+            attemptCount: 0,
             defenderScore: match.defenderScore + 50,
-            currentPhase,
+            currentPhase: "DEFENDER_PATCH",
             phaseExpiresAt: new Date(now + TURN_DURATION_MS),
         };
     } else if (match.currentPhase === "DEFENDER_PATCH") {
@@ -175,7 +173,9 @@ async function sanitizeMatch(
         currentPhase: match.currentPhase,
         attackerScore: match.attackerScore,
         defenderScore: match.defenderScore,
+        attemptCount: match.attemptCount,
         status: match.status,
+        maxAttackAttempts: MAX_ATTACK_ATTEMPTS,
         developerPrompt: role === "defender" ? match.developerPrompt : undefined,
         breachCriteria: role === "defender" ? match.breachCriteria : undefined,
         phaseExpiresAt: match.phaseExpiresAt?.toISOString(),
@@ -312,11 +312,11 @@ export async function recordAttackAttempt(params: {
 
     let cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
     let currentPhase: MatchPhase =
-        verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+        verdict.breach || attempt >= MAX_ATTACK_ATTEMPTS ? "DEFENDER_PATCH" : "ATTACK_PHASE";
     let status: IJailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
-    const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
+    const attemptCount = verdict.breach || attempt >= MAX_ATTACK_ATTEMPTS ? 0 : attempt;
 
     let shouldSwapRoles = false;
     let completedThemeIds = match.completedThemeIds ?? [];
@@ -329,7 +329,7 @@ export async function recordAttackAttempt(params: {
 
     if (verdict.breach) {
         attackerScore += computeAttackerReward(attempt, tokensUsed);
-        if (cracksCompleted >= 3) {
+        if (cracksCompleted >= 1) {
             // Theme completed! Add to completed list
             completedThemeIds = [...completedThemeIds, match.themeId];
 
@@ -454,11 +454,11 @@ export async function* streamAttackAttempt(params: {
 
     let cracksCompleted = verdict.breach ? match.cracksCompleted + 1 : match.cracksCompleted;
     let currentPhase: MatchPhase =
-        verdict.breach || attempt >= 3 ? "DEFENDER_PATCH" : "ATTACK_PHASE";
+        verdict.breach || attempt >= MAX_ATTACK_ATTEMPTS ? "DEFENDER_PATCH" : "ATTACK_PHASE";
     let status: IJailbreakMatch["status"] = match.status ?? "active";
     let attackerScore = match.attackerScore;
     let defenderScore = match.defenderScore;
-    const attemptCount = verdict.breach || attempt >= 3 ? 0 : attempt;
+    const attemptCount = verdict.breach || attempt >= MAX_ATTACK_ATTEMPTS ? 0 : attempt;
 
     let shouldSwapRoles = false;
     let completedThemeIds = match.completedThemeIds ?? [];
@@ -471,7 +471,7 @@ export async function* streamAttackAttempt(params: {
 
     if (verdict.breach) {
         attackerScore += computeAttackerReward(attempt, result.tokensUsed);
-        if (cracksCompleted >= 3) {
+        if (cracksCompleted >= 1) {
             // Theme completed! Add to completed list
             completedThemeIds = [...completedThemeIds, match.themeId];
 
