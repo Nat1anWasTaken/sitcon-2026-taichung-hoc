@@ -52,6 +52,7 @@ export function JailbreakBattle() {
     const lastServerDeveloperPromptRef = useRef("");
     const lastThemeKeyRef = useRef("");
     const lastCracksRef = useRef<number | null>(null);
+    const lastBannerThemeKeyRef = useRef<string | null>(null);
 
     const fetchMatch = async (showSpinner = false) => {
         // Only flip the full-screen loading state on the first load or when explicitly asked.
@@ -138,7 +139,16 @@ export function JailbreakBattle() {
     useEffect(() => {
         if (!matchState.data) return;
         const cracks = matchState.data.cracksCompleted ?? 0;
-        if (lastCracksRef.current === null) {
+        const themeKey = `${matchState.data.themeTitle ?? ""}||${
+            matchState.data.themeDescription ?? ""
+        }`;
+        if (lastBannerThemeKeyRef.current === null || lastCracksRef.current === null) {
+            lastBannerThemeKeyRef.current = themeKey;
+            lastCracksRef.current = cracks;
+            return;
+        }
+        if (themeKey !== lastBannerThemeKeyRef.current) {
+            lastBannerThemeKeyRef.current = themeKey;
             lastCracksRef.current = cracks;
             return;
         }
