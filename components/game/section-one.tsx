@@ -566,6 +566,26 @@ function BlockBuilder({
 
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
     const [ghostIndex, setGhostIndex] = useState<number | null>(null);
+    const ghostIndexRef = useRef<number | null>(null);
+    const ghostFrameRef = useRef<number | null>(null);
+
+    const scheduleGhostIndex = useCallback((next: number | null) => {
+        if (ghostIndexRef.current === next) return;
+        ghostIndexRef.current = next;
+        if (ghostFrameRef.current !== null) return;
+        ghostFrameRef.current = window.requestAnimationFrame(() => {
+            ghostFrameRef.current = null;
+            setGhostIndex(ghostIndexRef.current);
+        });
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (ghostFrameRef.current !== null) {
+                window.cancelAnimationFrame(ghostFrameRef.current);
+            }
+        };
+    }, []);
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveDragId(event.active.id.toString());
@@ -574,14 +594,14 @@ function BlockBuilder({
     const handleDragOver = (event: DragOverEvent) => {
         const { active, over } = event;
         if (!over) {
-            setGhostIndex(null);
+            scheduleGhostIndex(null);
             return;
         }
 
         const activeId = active.id.toString();
         // Only show ghost when dragging a NEW source block
         if (!activeId.startsWith("source-")) {
-            setGhostIndex(null);
+            scheduleGhostIndex(null);
             return;
         }
 
@@ -589,7 +609,7 @@ function BlockBuilder({
 
         if (overId === "prompt-bar") {
             // Append if over the container background
-            setGhostIndex(selected.length);
+            scheduleGhostIndex(selected.length);
             return;
         }
 
@@ -601,9 +621,9 @@ function BlockBuilder({
         // If over an existing item, find its index
         const index = selectedWithIds.findIndex((item) => item.id === overId);
         if (index !== -1) {
-            setGhostIndex(index);
+            scheduleGhostIndex(index);
         } else if (overId === "removal-zone") {
-            setGhostIndex(null);
+            scheduleGhostIndex(null);
         }
     };
 
@@ -612,7 +632,12 @@ function BlockBuilder({
         setActiveDragId(null);
 
         // Capture ghost index before resetting
-        const finalGhostIndex = ghostIndex;
+        const finalGhostIndex = ghostIndexRef.current;
+        ghostIndexRef.current = null;
+        if (ghostFrameRef.current !== null) {
+            window.cancelAnimationFrame(ghostFrameRef.current);
+            ghostFrameRef.current = null;
+        }
         setGhostIndex(null);
 
         if (!over) return;
@@ -667,6 +692,11 @@ function BlockBuilder({
 
     const handleDragCancel = () => {
         setActiveDragId(null);
+        ghostIndexRef.current = null;
+        if (ghostFrameRef.current !== null) {
+            window.cancelAnimationFrame(ghostFrameRef.current);
+            ghostFrameRef.current = null;
+        }
         setGhostIndex(null);
     };
 
