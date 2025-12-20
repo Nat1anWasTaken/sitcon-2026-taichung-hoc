@@ -10,7 +10,7 @@ import {
     Timer,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,14 @@ export function JailbreakBattle() {
     });
     const [attackInput, setAttackInput] = useState("");
     const [developerDraft, setDeveloperDraft] = useState("");
+    const [developerDirty, setDeveloperDirty] = useState(false);
     const [busy, setBusy] = useState(false);
     const [streamingResponse, setStreamingResponse] = useState("");
     const [now, setNow] = useState(() => Date.now());
+    const developerDraftRef = useRef("");
+    const developerDirtyRef = useRef(false);
+    const lastServerDeveloperPromptRef = useRef("");
+    const lastThemeKeyRef = useRef("");
 
     const fetchMatch = async (showSpinner = false) => {
         // Only flip the full-screen loading state on the first load or when explicitly asked.
@@ -70,8 +75,28 @@ export function JailbreakBattle() {
         }
         const data = await res.json();
         setMatchState({ loading: false, data: data.match });
-        if (data.match?.developerPrompt) {
-            setDeveloperDraft(data.match.developerPrompt);
+        const serverPrompt = data.match?.developerPrompt ?? "";
+        const themeKey = `${data.match?.themeTitle ?? ""}||${data.match?.themeDescription ?? ""}`;
+        const themeChanged = themeKey !== lastThemeKeyRef.current;
+        if (themeChanged) {
+            setDeveloperDraft(serverPrompt);
+            setDeveloperDirty(false);
+            lastServerDeveloperPromptRef.current = serverPrompt;
+            lastThemeKeyRef.current = themeKey;
+            return;
+        }
+        if (serverPrompt !== lastServerDeveloperPromptRef.current) {
+            const localDraft = developerDraftRef.current;
+            const localDirty = developerDirtyRef.current;
+            const shouldSync =
+                !localDirty ||
+                !localDraft.trim() ||
+                localDraft === lastServerDeveloperPromptRef.current;
+            if (shouldSync) {
+                setDeveloperDraft(serverPrompt);
+                setDeveloperDirty(false);
+            }
+            lastServerDeveloperPromptRef.current = serverPrompt;
         }
     };
 
@@ -92,6 +117,14 @@ export function JailbreakBattle() {
         const id = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(id);
     }, []);
+
+    useEffect(() => {
+        developerDraftRef.current = developerDraft;
+    }, [developerDraft]);
+
+    useEffect(() => {
+        developerDirtyRef.current = developerDirty;
+    }, [developerDirty]);
 
     useEffect(() => {
         if (!session) return;
@@ -179,6 +212,15 @@ export function JailbreakBattle() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "修補失敗");
             setMatchState({ loading: false, data: data.match });
+            const serverPrompt = data.match?.developerPrompt ?? developerDraft.trim();
+            setDeveloperDraft(serverPrompt);
+            setDeveloperDirty(false);
+            lastServerDeveloperPromptRef.current = serverPrompt;
+            if (data.match) {
+                lastThemeKeyRef.current = `${data.match.themeTitle ?? ""}||${
+                    data.match.themeDescription ?? ""
+                }`;
+            }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "修補失敗";
             setMatchState((s) => ({ ...s, error: message }));
@@ -350,7 +392,12 @@ export function JailbreakBattle() {
                         ) : (
                             <DefenderPanel
                                 developerPrompt={developerDraft}
-                                setDeveloperPrompt={setDeveloperDraft}
+                                setDeveloperPrompt={(value) => {
+                                    setDeveloperDraft(value);
+                                    setDeveloperDirty(
+                                        value !== lastServerDeveloperPromptRef.current
+                                    );
+                                }}
                                 onSave={handlePatch}
                                 canPatch={canPatch && match.status !== "completed"}
                                 busy={busy}

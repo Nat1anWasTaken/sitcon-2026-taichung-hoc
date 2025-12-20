@@ -17,6 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -69,6 +76,7 @@ export default function ChildrenPage() {
     const { children, loading, error, refresh } = useChildren();
     const [filterStatus, setFilterStatus] = useState<"all" | "active" | "disabled">("all");
     const [createOpen, setCreateOpen] = useState(false);
+    const [bulkOpen, setBulkOpen] = useState(false);
     const [progressChild, setProgressChild] = useState<ChildAccount | null>(null);
     const [formState, setFormState] = useState({
         childId: "",
@@ -76,8 +84,14 @@ export default function ChildrenPage() {
         password: "",
         name: "",
     });
+    const [bulkState, setBulkState] = useState({
+        start: "",
+        end: "",
+    });
+    const [bulkNotice, setBulkNotice] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [busy, startBusy] = useTransition();
+    const [bulkBusy, startBulkBusy] = useTransition();
 
     const filtered = useMemo(() => {
         return children.filter((c) => {
@@ -111,6 +125,57 @@ export default function ChildrenPage() {
         });
     };
 
+    const handleBulkCreate = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setMessage(null);
+        setBulkNotice(null);
+
+        const startValue = Number(bulkState.start);
+        const endValue = Number(bulkState.end);
+
+        if (!Number.isFinite(startValue) || !Number.isFinite(endValue)) {
+            setBulkNotice("請輸入有效的起始與結束座位號碼。");
+            return;
+        }
+
+        if (startValue < 1 || endValue < 1) {
+            setBulkNotice("座位號碼需要大於 0。");
+            return;
+        }
+
+        if (startValue > endValue) {
+            setBulkNotice("起始座位號碼不可大於結束座位號碼。");
+            return;
+        }
+
+        startBulkBusy(async () => {
+            let createdCount = 0;
+            let failedCount = 0;
+            for (let seat = startValue; seat <= endValue; seat += 1) {
+                try {
+                    await createChildAccount({
+                        childId: String(seat),
+                        seatNumber: seat,
+                        name: String(seat),
+                    });
+                    createdCount += 1;
+                } catch {
+                    failedCount += 1;
+                }
+            }
+
+            if (failedCount > 0) {
+                setMessage(`已建立 ${createdCount} 位學生，${failedCount} 位建立失敗或已存在。`);
+            } else {
+                setMessage(`已建立 ${createdCount} 位學生。`);
+            }
+
+            setBulkState({ start: "", end: "" });
+            setBulkOpen(false);
+            await refresh();
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -126,7 +191,12 @@ export default function ChildrenPage() {
                         <h1 className="text-2xl font-bold leading-tight">學生帳號</h1>
                     </div>
                 </div>
-                <Button onClick={() => setCreateOpen(true)}>新增學生</Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                        批次建立
+                    </Button>
+                    <Button onClick={() => setCreateOpen(true)}>新增學生</Button>
+                </div>
             </div>
 
             {message && (
@@ -272,6 +342,75 @@ export default function ChildrenPage() {
                     </form>
                 </div>
             )}
+
+            <Dialog
+                open={bulkOpen}
+                onOpenChange={(open) => {
+                    setBulkOpen(open);
+                    if (!open) setBulkNotice(null);
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>批次建立學生帳號</DialogTitle>
+                        <DialogDescription>
+                            系統會用座位號碼當作學生 ID 與姓名。
+                        </DialogDescription>
+                    </DialogHeader>
+                    {bulkNotice && (
+                        <div className="rounded-md border-4 border-destructive bg-secondary-background px-4 py-2 text-sm font-semibold text-destructive shadow-shadow">
+                            {bulkNotice}
+                        </div>
+                    )}
+                    <form className="grid gap-4" onSubmit={handleBulkCreate}>
+                        <div className="space-y-2">
+                            <Label htmlFor="bulk-start">起始座位號碼</Label>
+                            <Input
+                                id="bulk-start"
+                                type="number"
+                                min={1}
+                                required
+                                value={bulkState.start}
+                                onChange={(e) =>
+                                    setBulkState((s) => ({ ...s, start: e.target.value }))
+                                }
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="bulk-end">結束座位號碼</Label>
+                            <Input
+                                id="bulk-end"
+                                type="number"
+                                min={1}
+                                required
+                                value={bulkState.end}
+                                onChange={(e) =>
+                                    setBulkState((s) => ({ ...s, end: e.target.value }))
+                                }
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button type="submit" disabled={bulkBusy}>
+                                {bulkBusy ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" /> 建立中…
+                                    </>
+                                ) : (
+                                    "開始建立"
+                                )}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setBulkOpen(false)}
+                                disabled={bulkBusy}
+                            >
+                                取消
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <ProgressSheet
                 child={progressChild}
