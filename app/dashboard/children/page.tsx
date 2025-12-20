@@ -8,6 +8,7 @@ import {
     MoreHorizontal,
     Pencil,
     SlidersHorizontal,
+    Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
@@ -52,6 +53,7 @@ import { useGardenContent } from "@/hooks/use-garden";
 import {
     createChildAccount,
     clearChildPassword,
+    deleteChildAccount,
     resetChildPassword,
     setChildStatus,
     updateChildName,
@@ -293,6 +295,7 @@ function ChildRow({
 }) {
     const [openEdit, setOpenEdit] = useState(false);
     const [openReset, setOpenReset] = useState(false);
+    const [openDelete, setOpenDelete] = useState(false);
     const [name, setName] = useState(child.name ?? "");
     const [password, setPassword] = useState("");
     const [saving, startSaving] = useTransition();
@@ -327,6 +330,13 @@ function ChildRow({
             await refresh();
         });
 
+    const applyDelete = () =>
+        startSaving(async () => {
+            await deleteChildAccount(child.childId);
+            setOpenDelete(false);
+            await refresh();
+        });
+
     return (
         <>
             <TableRow>
@@ -358,6 +368,10 @@ function ChildRow({
                             <DropdownMenuItem onClick={onProgress}>
                                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                                 進度
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setOpenDelete(true)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                刪除學生
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={toggleStatus}>
                                 {disabled ? "啟用帳號" : "停用帳號"}
@@ -407,6 +421,33 @@ function ChildRow({
                                 清除密碼
                             </Button>
                             <Button variant="ghost" onClick={() => setOpenReset(false)}>
+                                取消
+                            </Button>
+                        </div>
+                    </div>
+                </InlineDialog>
+            )}
+
+            {openDelete && (
+                <InlineDialog title="刪除學生" onClose={() => setOpenDelete(false)}>
+                    <div className="space-y-3">
+                        <p className="text-sm">
+                            確定要刪除{" "}
+                            <span className="font-semibold">
+                                {child.name ?? child.childId}
+                            </span>
+                            嗎？這個動作無法復原。
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                className="border-destructive text-destructive"
+                                onClick={applyDelete}
+                                disabled={saving}
+                            >
+                                {saving ? "刪除中…" : "確認刪除"}
+                            </Button>
+                            <Button variant="ghost" onClick={() => setOpenDelete(false)}>
                                 取消
                             </Button>
                         </div>

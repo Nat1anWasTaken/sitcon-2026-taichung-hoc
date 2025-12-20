@@ -88,6 +88,12 @@ export async function setChildStatus(
     });
 }
 
+export async function deleteChildAccount(childId: string) {
+    await apiRequest(`/api/admin/children/${encodeURIComponent(childId)}`, {
+        method: "DELETE",
+    });
+}
+
 export async function verifyChildPassword(childId: string, password: string) {
     const data = await apiRequest<{ ok: boolean }>(
         `/api/admin/children/${encodeURIComponent(childId)}/verify`,
