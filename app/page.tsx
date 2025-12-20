@@ -29,31 +29,42 @@ export default function Home() {
 
     useEffect(() => {
         let active = true;
-        setRosterLoading(true);
-        setRosterError(null);
-        fetch("/api/child/roster")
-            .then(async (res) => {
+
+        const loadRoster = async (showLoading: boolean) => {
+            if (!active) return;
+            if (showLoading) {
+                setRosterLoading(true);
+            }
+            setRosterError(null);
+            try {
+                const res = await fetch("/api/child/roster");
                 if (!res.ok) {
                     const message = await res.text();
                     throw new Error(message || "Failed to load roster");
                 }
-                return res.json();
-            })
-            .then((data: { children: ChildRosterEntry[] }) => {
+                const data = (await res.json()) as { children: ChildRosterEntry[] };
                 if (!active) return;
                 setRoster(Array.isArray(data.children) ? data.children : []);
-            })
-            .catch((err: unknown) => {
+            } catch (err: unknown) {
                 if (!active) return;
                 const message = err instanceof Error ? err.message : "Failed to load roster";
                 setRosterError(message);
-            })
-            .finally(() => {
+            } finally {
                 if (!active) return;
-                setRosterLoading(false);
-            });
+                if (showLoading) {
+                    setRosterLoading(false);
+                }
+            }
+        };
+
+        loadRoster(true);
+        const interval = setInterval(() => {
+            loadRoster(false);
+        }, 2000);
+
         return () => {
             active = false;
+            clearInterval(interval);
         };
     }, []);
 
