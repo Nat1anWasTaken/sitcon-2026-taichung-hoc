@@ -155,11 +155,15 @@ export function JailbreakBattle() {
         if (cracks > lastCracksRef.current) {
             setShowBreachBanner(true);
             lastCracksRef.current = cracks;
-            const id = setTimeout(() => setShowBreachBanner(false), 4000);
-            return () => clearTimeout(id);
         }
         lastCracksRef.current = cracks;
     }, [matchState.data]);
+
+    useEffect(() => {
+        if (!showBreachBanner) return;
+        const id = setTimeout(() => setShowBreachBanner(false), 3000);
+        return () => clearTimeout(id);
+    }, [showBreachBanner]);
 
     const handleAttack = async () => {
         if (!attackInput.trim() || !matchState.data) return;

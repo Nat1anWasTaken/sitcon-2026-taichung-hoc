@@ -413,7 +413,8 @@ export async function judgeJailbreakBreach({
             try {
                 const parsed = JSON.parse(match[0]);
                 const breach = Boolean(parsed.breach);
-                const reason = typeof parsed.reason === "string" ? parsed.reason : "No reason given";
+                const reason =
+                    typeof parsed.reason === "string" ? parsed.reason : "No reason given";
                 return { breach, reason };
             } catch {
                 // fall through to default
