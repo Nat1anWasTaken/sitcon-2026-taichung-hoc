@@ -46,10 +46,12 @@ export function JailbreakBattle() {
     const [busy, setBusy] = useState(false);
     const [streamingResponse, setStreamingResponse] = useState("");
     const [now, setNow] = useState(() => Date.now());
+    const [showBreachBanner, setShowBreachBanner] = useState(false);
     const developerDraftRef = useRef("");
     const developerDirtyRef = useRef(false);
     const lastServerDeveloperPromptRef = useRef("");
     const lastThemeKeyRef = useRef("");
+    const lastCracksRef = useRef<number | null>(null);
 
     const fetchMatch = async (showSpinner = false) => {
         // Only flip the full-screen loading state on the first load or when explicitly asked.
@@ -132,6 +134,22 @@ export function JailbreakBattle() {
         const id = setInterval(() => fetchMatch(false), 2000);
         return () => clearInterval(id);
     }, [session]);
+
+    useEffect(() => {
+        if (!matchState.data) return;
+        const cracks = matchState.data.cracksCompleted ?? 0;
+        if (lastCracksRef.current === null) {
+            lastCracksRef.current = cracks;
+            return;
+        }
+        if (cracks > lastCracksRef.current) {
+            setShowBreachBanner(true);
+            lastCracksRef.current = cracks;
+            const id = setTimeout(() => setShowBreachBanner(false), 4000);
+            return () => clearTimeout(id);
+        }
+        lastCracksRef.current = cracks;
+    }, [matchState.data]);
 
     const handleAttack = async () => {
         if (!attackInput.trim() || !matchState.data) return;
@@ -315,6 +333,22 @@ export function JailbreakBattle() {
 
     return (
         <div className="min-h-full bg-background px-4 py-8">
+            {showBreachBanner && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-destructive/80 px-4 text-center text-destructive-foreground">
+                    <div className="w-full max-w-3xl rounded-md border-4 border-foreground bg-secondary-background px-6 py-10 shadow-shadow">
+                        <div className="flex items-center justify-center gap-3 text-3xl font-black uppercase tracking-wide">
+                            <AlertTriangle className="h-10 w-10" />
+                            防線被突破！
+                        </div>
+                        <p className="mt-4 text-lg font-semibold">
+                            攻方成功突破安全層，守方準備修補。
+                        </p>
+                        <div className="mt-3 text-sm font-semibold text-foreground/70">
+                            這個提醒將在幾秒後自動關閉。
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="mx-auto flex min-h-full max-w-6xl flex-col gap-6">
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex flex-wrap items-center gap-3">
