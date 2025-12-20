@@ -51,6 +51,7 @@ import { useChildren } from "@/hooks/use-children";
 import { useGardenContent } from "@/hooks/use-garden";
 import {
     createChildAccount,
+    clearChildPassword,
     resetChildPassword,
     setChildStatus,
     updateChildName,
@@ -244,12 +245,12 @@ export default function ChildrenPage() {
                             <Label htmlFor="password">密碼</Label>
                             <Input
                                 id="password"
-                                required
                                 type="password"
                                 value={formState.password}
                                 onChange={(e) =>
                                     setFormState((s) => ({ ...s, password: e.target.value }))
                                 }
+                                placeholder="留空則首次登入建立密碼"
                             />
                         </div>
                         <div className="sm:col-span-2 flex items-center gap-3">
@@ -263,7 +264,7 @@ export default function ChildrenPage() {
                                 )}
                             </Button>
                             <p className="text-xs text-foreground/70">
-                                僅限管理員：學生以座位徽章 + 密碼登入。
+                                密碼可留空，學生首次登入時會建立密碼。
                             </p>
                         </div>
                     </form>
@@ -307,6 +308,14 @@ function ChildRow({
     const applyReset = () =>
         startSaving(async () => {
             await resetChildPassword(child.childId, password);
+            setPassword("");
+            setOpenReset(false);
+            await refresh();
+        });
+
+    const applyClear = () =>
+        startSaving(async () => {
+            await clearChildPassword(child.childId);
             setPassword("");
             setOpenReset(false);
             await refresh();
@@ -388,10 +397,14 @@ function ChildRow({
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            placeholder="留空則下次登入重新建立"
                         />
                         <div className="flex items-center gap-2">
                             <Button onClick={applyReset} disabled={saving || password.length === 0}>
                                 {saving ? "更新中…" : "更新密碼"}
+                            </Button>
+                            <Button variant="outline" onClick={applyClear} disabled={saving}>
+                                清除密碼
                             </Button>
                             <Button variant="ghost" onClick={() => setOpenReset(false)}>
                                 取消

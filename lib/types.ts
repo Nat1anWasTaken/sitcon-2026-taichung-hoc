@@ -15,3 +15,11 @@ export type ChildAccount = {
     lastLoginAt?: Date | string;
     status?: "active" | "disabled";
 };
+
+export type ChildRosterEntry = {
+    seatNumber: number;
+    childId: string;
+    name?: string | null;
+    status?: "active" | "disabled";
+    hasPassword: boolean;
+};

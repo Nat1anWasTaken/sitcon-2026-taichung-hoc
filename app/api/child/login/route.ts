@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { hashPassword } from "@/lib/passwords";
+import { randomInt } from "crypto";
+
+import { generateSalt, hashPassword } from "@/lib/passwords";
 import { setChildSessionCookie, clearChildSessionCookie } from "@/lib/server/session";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ChildModel, IChild } from "@/lib/models/child";
 
+function generateChildPassword() {
+    const value = randomInt(100000, 1000000);
+    return String(value);
+}
+
 export async function POST(req: NextRequest) {
     const { childId, password } = await req.json();
-    if (!childId || !password) {
-        return NextResponse.json({ error: "childId and password required" }, { status: 400 });
+    if (!childId) {
+        return NextResponse.json({ error: "childId required" }, { status: 400 });
     }
 
     await connectToDatabase();
@@ -21,9 +28,25 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "This seat is disabled" }, { status: 403 });
     }
 
-    const computed = await hashPassword(password, child.passwordSalt);
-    if (computed !== child.passwordHash) {
-        return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+    const hasPassword = Boolean(child.passwordSalt && child.passwordHash);
+    let generatedPassword: string | null = null;
+
+    if (hasPassword) {
+        if (!password) {
+            return NextResponse.json({ error: "password required" }, { status: 400 });
+        }
+        const computed = await hashPassword(password, child.passwordSalt);
+        if (computed !== child.passwordHash) {
+            return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+        }
+    } else {
+        generatedPassword = generateChildPassword();
+        const salt = generateSalt();
+        const passwordHash = await hashPassword(generatedPassword, salt);
+        await ChildModel.updateOne(
+            { _id: childId },
+            { $set: { passwordSalt: salt, passwordHash, lastLoginAt: new Date() } }
+        );
     }
 
     const session = {
@@ -33,13 +56,15 @@ export async function POST(req: NextRequest) {
         issuedAt: Date.now(),
     };
 
-    const res = NextResponse.json({ session });
+    const res = NextResponse.json({
+        session,
+        generatedPassword: generatedPassword ?? undefined,
+    });
     setChildSessionCookie(res, session);
 
-    await ChildModel.updateOne(
-        { _id: childId },
-        { $set: { lastLoginAt: new Date() } }
-    );
+    if (hasPassword) {
+        await ChildModel.updateOne({ _id: childId }, { $set: { lastLoginAt: new Date() } });
+    }
 
     return res;
 }

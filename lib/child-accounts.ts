@@ -5,7 +5,7 @@ import { ChildAccount } from "./types";
 type CreateChildInput = {
     childId: string;
     seatNumber: number;
-    password: string;
+    password?: string;
     name?: string;
 };
 
@@ -30,8 +30,9 @@ export async function createChildAccount({
     password,
     name,
 }: CreateChildInput) {
-    const salt = generateSalt();
-    const passwordHash = await hashPassword(password, salt);
+    const usePassword = typeof password === "string" && password.length > 0;
+    const salt = usePassword ? generateSalt() : "";
+    const passwordHash = usePassword ? await hashPassword(password, salt) : "";
 
     const payload = {
         childId,
@@ -67,6 +68,13 @@ export async function resetChildPassword(childId: string, password: string) {
     await apiRequest(`/api/admin/children/${encodeURIComponent(childId)}`, {
         method: "PATCH",
         body: JSON.stringify({ passwordSalt: salt, passwordHash }),
+    });
+}
+
+export async function clearChildPassword(childId: string) {
+    await apiRequest(`/api/admin/children/${encodeURIComponent(childId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ passwordSalt: "", passwordHash: "" }),
     });
 }
 

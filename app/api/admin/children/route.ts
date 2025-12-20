@@ -25,8 +25,13 @@ export async function POST(req: NextRequest) {
         const passwordHash = String(body.passwordHash ?? "");
         const name = body.name ?? null;
         const status = body.status ?? "active";
+        const hasPassword = passwordSalt.length > 0 || passwordHash.length > 0;
 
-        if (!childId || !Number.isFinite(seatNumber) || !passwordSalt || !passwordHash) {
+        if (
+            !childId ||
+            !Number.isFinite(seatNumber) ||
+            (hasPassword && (!passwordSalt || !passwordHash))
+        ) {
             return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
         }
 
